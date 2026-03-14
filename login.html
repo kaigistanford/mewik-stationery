@@ -20,6 +20,22 @@
     </div>
     <h1 class="auth-title">Welcome Back</h1>
     <p class="auth-subtitle">Sign in to access your dashboard and track your requests.</p>
+    
+  <!-- ── Clear old data banner ─────────────────────────── -->
+  <div id="clear-banner" style="
+    background:#1d4ed8;color:#fff;padding:14px 20px;
+    border-radius:10px;margin-bottom:20px;font-size:0.88rem;line-height:1.6;
+    display:block;">
+    <strong>⚠ First time setup or sync issues?</strong><br>
+    Tap the button below on every device to clear old data and connect to the shared database.
+    <br><br>
+    <button onclick="clearAndReload()" style="
+      background:#fff;color:#1d4ed8;border:none;padding:9px 20px;
+      border-radius:7px;font-weight:700;font-size:0.9rem;cursor:pointer;
+      width:100%;">
+      🔄 Clear Old Data &amp; Reload
+    </button>
+  </div>
     <form id="login-form" novalidate>
       <div class="form-group">
         <label class="form-label">Email Address</label>
@@ -52,5 +68,34 @@
   <script src="js/app.js"></script>
   <script src="js/auth.js"></script>
   <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").catch(function(){});}</script>
+
+<script>
+function clearAndReload() {
+  // Remove every mewik-related key from localStorage
+  var toRemove = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (k && k.indexOf('mewik') !== -1) toRemove.push(k);
+  }
+  toRemove.forEach(function(k) { localStorage.removeItem(k); });
+  // Also clear sessionStorage
+  sessionStorage.clear();
+  // Show confirmation then reload
+  document.getElementById('clear-banner').innerHTML =
+    '<span style="color:#fff;font-weight:700">✅ Cleared! Reloading…</span>';
+  setTimeout(function() { location.reload(); }, 800);
+}
+
+// Auto-hide the banner after successful login
+document.addEventListener('DOMContentLoaded', function() {
+  var loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', function() {
+      var banner = document.getElementById('clear-banner');
+      if (banner) banner.style.display = 'none';
+    });
+  }
+});
+</script>
 </body>
 </html>
