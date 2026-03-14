@@ -17,8 +17,8 @@
 'use strict';
 
 const SYNC = {
-  masterKey: 'YOUR_MASTER_KEY',   // ← Step 1: paste Master Key here
-  binId:     'YOUR_BIN_ID',       // ← Step 2: paste Bin ID here after first run
+  masterKey: '$2a$10$xBnLMGJj7lLX2.tb11S/XeU5xXGB0pHMtxSV3MZsRo2liNf3C/TAq',   // ← Step 1: paste Master Key here
+  binId:     '69b5d173b7ec241ddc6b85fe',       // ← Step 2: paste Bin ID here after first run
 
   baseUrl: 'https://api.jsonbin.io/v3/b',
   pollMs:  10000,
