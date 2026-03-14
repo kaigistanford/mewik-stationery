@@ -1,27 +1,38 @@
 // ============================================================
-//  MEWIK STATIONERY — sync-config.js  v5.2
+//  MEWIK STATIONERY — sync-config.js  v5.3
 //
-//  SETUP — only one step:
-//  1. Go to https://jsonbin.io → login → click "API Keys"
-//  2. Click "Create Access Key" → name it anything → copy the Master Key
-//  3. Paste it below replacing YOUR_MASTER_KEY → save this file
+//  SETUP — TWO steps (read carefully):
 //
-//  The app creates everything else automatically. Done.
+//  Step 1 — Paste your Master Key below (replace YOUR_MASTER_KEY)
+//           Get it from: jsonbin.io → API Keys → Master Key
+//
+//  Step 2 — Open the app once in any browser. An alert will show
+//           your Bin ID. Copy it and paste it below replacing
+//           YOUR_BIN_ID, then save this file and redeploy.
+//           After Step 2 every device will share the same data.
+//
+//  You only do Step 2 ONCE. After that, do not change the Bin ID.
 // ============================================================
 
 'use strict';
 
 const SYNC = {
-  masterKey: '$2a$10$W/dA/v/ac68GEI1O9PKcR.jVqoBZVJMKmeAqdCjGJ9oyyHc71hnEC',   // ← paste ONLY this
-  baseUrl:   'https://api.jsonbin.io/v3/b',
-  pollMs:    10000,
+  masterKey: '$2a$10$xBnLMGJj7lLX2.tb11S/XeU5xXGB0pHMtxSV3MZsRo2liNf3C/TAq',   // ← Step 1: paste Master Key here
+  binId:     '69b5d173b7ec241ddc6b85fe',       // ← Step 2: paste Bin ID here after first run
 
-  isReady() {
+  baseUrl: 'https://api.jsonbin.io/v3/b',
+  pollMs:  10000,
+
+  keyReady() {
     return this.masterKey
         && this.masterKey !== 'YOUR_MASTER_KEY'
         && this.masterKey.length > 10;
   },
-
+  isReady() {
+    return this.keyReady()
+        && this.binId !== 'YOUR_BIN_ID'
+        && this.binId.length > 10;
+  },
   headers() {
     return {
       'Content-Type':     'application/json',
@@ -31,102 +42,79 @@ const SYNC = {
   },
 };
 
-// ── Bootstrap: get or create the ONE shared bin ───────────────
-// The bin ID is stored in a tiny "pointer" bin whose ID is
-// derived from the master key — same key always → same pointer
-// → same data bin. Every device with the same key finds the same data.
-
-const POINTER_NAME = 'mewik-ptr';
-const DATA_NAME    = 'mewik-db';
-const EMPTY_DB     = {
+const EMPTY_DB = {
   users:[], requests:[], logs:[], notifs:[],
   ratings:[], services:[], pricing:[], settings:{},
 };
 
-let _dataBinId  = localStorage.getItem('mewik_data_bin') || null;
-let _memCache   = null;
-let _dirty      = false;
-let _writing    = false;
-let _lastSync   = 0;
-let _setupDone  = false;
+let _memCache = null;
+let _dirty    = false;
+let _writing  = false;
+let _lastSync = 0;
 
-// Find or create the data bin, using a named search
-async function _bootstrap() {
-  if (_setupDone && _dataBinId) return true;
-  if (!SYNC.isReady()) return false;
-
-  try {
-    // 1. Try to find existing bins named mewik-db
-    const searchResp = await fetch('https://api.jsonbin.io/v3/b?meta=true', {
-      headers: SYNC.headers(),
-    });
-
-    if (searchResp.ok) {
-      const list = await searchResp.json();
-      const bins = list.result || list.bins || list || [];
-      const found = Array.isArray(bins)
-        ? bins.find(b => (b.record?.name||b.metadata?.name||b.name||'') === DATA_NAME)
-        : null;
-
-      if (found) {
-        const id = found._id || found.record?._id || found.metadata?.id || found.id;
-        if (id) {
-          _dataBinId = id;
-          localStorage.setItem('mewik_data_bin', id);
-          _setupDone = true;
-          console.log('[Sync] Found existing bin:', id);
-          return true;
-        }
-      }
-    }
-
-    // 2. No existing bin found — create one
-    if (!_dataBinId) {
-      console.log('[Sync] Creating new data bin…');
-      const createResp = await fetch(SYNC.baseUrl, {
-        method:  'POST',
-        headers: { ...SYNC.headers(), 'X-Bin-Name': DATA_NAME, 'X-Bin-Private': 'true' },
-        body:    JSON.stringify(EMPTY_DB),
-      });
-
-      if (!createResp.ok) {
-        const errText = await createResp.text();
-        throw new Error('Create bin failed ' + createResp.status + ': ' + errText);
-      }
-
-      const created = await createResp.json();
-      const newId   = created.metadata?.id || created._id || created.id;
-      if (!newId) throw new Error('No bin ID in response: ' + JSON.stringify(created));
-
-      _dataBinId = newId;
-      localStorage.setItem('mewik_data_bin', newId);
-      _setupDone = true;
-      console.log('[Sync] Created new bin:', newId);
-      return true;
-    }
-
-  } catch(e) {
-    console.error('[Sync] Bootstrap failed:', e.message);
-    return false;
+// ── Get the bin ID (hardcoded in config OR from localStorage fallback) ──
+function _getBinId() {
+  if (SYNC.binId !== 'YOUR_BIN_ID' && SYNC.binId.length > 10) {
+    return SYNC.binId;
   }
-
-  _setupDone = true;
-  return !!_dataBinId;
+  // Fallback: check localStorage (set after first auto-create)
+  return localStorage.getItem('mewik_bin_id') || null;
 }
 
-// ── Read whole DB ─────────────────────────────────────────────
-async function _remoteRead() {
-  const resp = await fetch(SYNC.baseUrl + '/' + _dataBinId + '/latest', {
-    headers: SYNC.headers(),
+// ── Create the bin for the first time and alert the user ─────
+async function _createBin() {
+  console.log('[Sync] Creating new database bin…');
+  const resp = await fetch(SYNC.baseUrl, {
+    method:  'POST',
+    headers: { ...SYNC.headers(), 'X-Bin-Name': 'mewik-db', 'X-Bin-Private': 'true' },
+    body:    JSON.stringify(EMPTY_DB),
   });
+
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error('Could not create bin: ' + resp.status + ' — ' + txt);
+  }
+
+  const data = await resp.json();
+  const id   = (data.metadata && data.metadata.id) || data._id || data.id;
+
+  if (!id) throw new Error('JSONBin did not return a Bin ID. Response: ' + JSON.stringify(data));
+
+  localStorage.setItem('mewik_bin_id', id);
+  console.log('[Sync] Bin created:', id);
+
+  // ── Show Bin ID to user so they can paste it into sync-config.js ──
+  setTimeout(function() {
+    const msg =
+      '✅ MEWIK DATABASE CREATED!\n\n' +
+      'Your Bin ID is:\n\n' +
+      id + '\n\n' +
+      'ACTION REQUIRED:\n' +
+      '1. Copy the Bin ID above\n' +
+      '2. Open  js/sync-config.js\n' +
+      '3. Replace  YOUR_BIN_ID  with this ID\n' +
+      '4. Save and redeploy the file\n\n' +
+      'After that, all devices will sync together.\n' +
+      '(This message only appears once.)';
+    alert(msg);
+  }, 1500);
+
+  return id;
+}
+
+// ── Read whole DB from JSONBin ────────────────────────────────
+async function _remoteRead() {
+  const id   = _getBinId();
+  const resp = await fetch(SYNC.baseUrl + '/' + id + '/latest', { headers: SYNC.headers() });
   if (!resp.ok) throw new Error('Read failed: ' + resp.status);
   const json = await resp.json();
   return { ...EMPTY_DB, ...(json.record || {}) };
 }
 
-// ── Write whole DB ────────────────────────────────────────────
+// ── Write whole DB to JSONBin ─────────────────────────────────
 async function _remoteWrite(data) {
-  const resp = await fetch(SYNC.baseUrl + '/' + _dataBinId, {
+  const id   = _getBinId();
+  const resp = await fetch(SYNC.baseUrl + '/' + id, {
     method:  'PUT',
     headers: SYNC.headers(),
     body:    JSON.stringify(data),
@@ -134,48 +122,59 @@ async function _remoteWrite(data) {
   if (!resp.ok) throw new Error('Write failed: ' + resp.status);
 }
 
-// ── Get current DB (init on first call) ──────────────────────
+// ── Get DB (from cache, localStorage, or remote) ──────────────
 async function _getDB() {
-  // Return cached if available and not stale
+  // Return in-memory cache if fresh (< 5s old)
   if (_memCache && (Date.now() - _lastSync < 5000)) return _memCache;
 
-  // Restore from localStorage immediately for fast render
+  // Restore localStorage cache instantly for fast page render
   if (!_memCache) {
-    const cached = localStorage.getItem('mewik_db_cache');
-    if (cached) {
-      try { _memCache = JSON.parse(cached); } catch(e) {}
+    try {
+      const c = localStorage.getItem('mewik_db_cache');
+      if (c) _memCache = JSON.parse(c);
+    } catch(e) {}
+  }
+
+  if (!SYNC.keyReady()) {
+    if (!_memCache) _memCache = { ...EMPTY_DB };
+    return _memCache;
+  }
+
+  // Ensure we have a bin ID
+  let binId = _getBinId();
+  if (!binId) {
+    // First ever run — create the bin
+    try {
+      binId = await _createBin();
+    } catch(e) {
+      console.error('[Sync] Bin creation failed:', e.message);
+      showToast('Sync Error', e.message, 'error', 8000);
+      if (!_memCache) _memCache = { ...EMPTY_DB };
+      return _memCache;
     }
   }
 
-  if (SYNC.isReady()) {
-    const ok = await _bootstrap();
-    if (ok) {
-      try {
-        const remote = await _remoteRead();
-        _memCache  = remote;
-        _lastSync  = Date.now();
-        localStorage.setItem('mewik_db_cache', JSON.stringify(_memCache));
-      } catch(e) {
-        console.warn('[Sync] Read error, using cache:', e.message);
-        if (!_memCache) _memCache = { ...EMPTY_DB };
-      }
-    } else {
-      if (!_memCache) _memCache = { ...EMPTY_DB };
-    }
-  } else {
+  // Read from remote
+  try {
+    const remote = await _remoteRead();
+    _memCache = remote;
+    _lastSync = Date.now();
+    localStorage.setItem('mewik_db_cache', JSON.stringify(_memCache));
+  } catch(e) {
+    console.warn('[Sync] Remote read failed, using cache:', e.message);
     if (!_memCache) _memCache = { ...EMPTY_DB };
   }
 
   return _memCache;
 }
 
-// ── Save DB (write-through with 600ms debounce) ───────────────
+// ── Save DB (debounced 600ms write to avoid hammering API) ────
 async function _saveDB(data) {
   _memCache = data;
   localStorage.setItem('mewik_db_cache', JSON.stringify(data));
   _dirty = true;
 
-  if (!SYNC.isReady() || !_dataBinId) return;
+  if (!SYNC.keyReady() || !_getBinId()) return;
 
   clearTimeout(_saveDB._t);
   _saveDB._t = setTimeout(async function() {
@@ -186,13 +185,13 @@ async function _saveDB(data) {
       _dirty    = false;
       _lastSync = Date.now();
     } catch(e) {
-      console.warn('[Sync] Write error:', e.message);
+      console.warn('[Sync] Write failed:', e.message);
     }
     _writing = false;
   }, 600);
 }
 
-// ── DB public API ─────────────────────────────────────────────
+// ── Public DB API ─────────────────────────────────────────────
 const DB = {
 
   async getUsers()        { return (await _getDB()).users || []; },
@@ -208,8 +207,8 @@ const DB = {
   async addRequest(r)          { const db=await _getDB(); (db.requests=db.requests||[]).push(r); await _saveDB(db); },
   async updateRequest(id,d)    { const db=await _getDB(); db.requests=(db.requests||[]).map(r=>r.id===id?{...r,...d}:r); await _saveDB(db); },
 
-  async getLogs()   { return (await _getDB()).logs || []; },
-  async addLog(l)   { const db=await _getDB(); (db.logs=db.logs||[]).push(l); await _saveDB(db); },
+  async getLogs()          { return (await _getDB()).logs || []; },
+  async addLog(l)          { const db=await _getDB(); (db.logs=db.logs||[]).push(l); await _saveDB(db); },
   async updateLog(reqId,d) { const db=await _getDB(); db.logs=(db.logs||[]).map(l=>l.requestId===reqId?{...l,...d}:l); await _saveDB(db); },
 
   async getNotifs(uid)      { return ((await _getDB()).notifs||[]).filter(n=>n.userId===uid); },
@@ -220,31 +219,30 @@ const DB = {
   async getPricing()          { return (await _getDB()).pricing  || []; },
   async savePricingItem(item) { const db=await _getDB(); db.pricing=(db.pricing||[]).map(p=>p.id===item.id?item:p); await _saveDB(db); },
 
-  async getRatings()               { return (await _getDB()).ratings || []; },
-  async getPublicRatings()         { return (await this.getRatings()).filter(r=>r.approved&&r.visible); },
-  async addRating(r)               { const db=await _getDB(); (db.ratings=db.ratings||[]).push(r); await _saveDB(db); },
-  async updateRating(id,d)         { const db=await _getDB(); db.ratings=(db.ratings||[]).map(r=>r.id===id?{...r,...d}:r); await _saveDB(db); },
-  async deleteRating(id)           { const db=await _getDB(); db.ratings=(db.ratings||[]).filter(r=>r.id!==id); await _saveDB(db); },
-  async getRatingByRequestId(rid)  { return (await this.getRatings()).find(r=>r.requestId===rid)||null; },
+  async getRatings()              { return (await _getDB()).ratings || []; },
+  async getPublicRatings()        { return (await this.getRatings()).filter(r=>r.approved&&r.visible); },
+  async addRating(r)              { const db=await _getDB(); (db.ratings=db.ratings||[]).push(r); await _saveDB(db); },
+  async updateRating(id,d)        { const db=await _getDB(); db.ratings=(db.ratings||[]).map(r=>r.id===id?{...r,...d}:r); await _saveDB(db); },
+  async deleteRating(id)          { const db=await _getDB(); db.ratings=(db.ratings||[]).filter(r=>r.id!==id); await _saveDB(db); },
+  async getRatingByRequestId(rid) { return (await this.getRatings()).find(r=>r.requestId===rid)||null; },
 
   async getSettings() {
     const def = {
-      siteName:'Mewik Stationery',tagline:'Your Academic Success, Professionally Delivered',
-      phone:'+255 616 832 924',whatsapp:'255621501329',whatsapp2:'255780580470',
+      siteName:'Mewik Stationery', tagline:'Your Academic Success, Professionally Delivered',
+      phone:'+255 616 832 924', whatsapp:'255621501329', whatsapp2:'255780580470',
       email:'kaigistanford81@gmail.com',
       address:'St. Gemma Road, Miyuji Proper Street, Miyuji — Dodoma City',
-      adminName:'Mewik Admin',adminEmail:'admin@mewik.co.tz',
+      adminName:'Mewik Admin', adminEmail:'admin@mewik.co.tz',
       hours:'Mon – Sat: 8:00 AM – 8:00 PM',
       heroTitle:'Your <em>Academic Success</em>,<br>Professionally Delivered',
       heroSubtitle:'Mewik Stationery provides expert academic assistance for university and college students across Tanzania.',
       aboutText:'',
     };
-    return { ...def, ...((await _getDB()).settings||{}) };
+    return { ...def, ...((await _getDB()).settings || {}) };
   },
   async saveSettings(d) { const db=await _getDB(); db.settings=d; await _saveDB(db); },
 
-  // Used by app.js seed function
-  async _write(key,val) { const db=await _getDB(); db[key]=val; await _saveDB(db); },
+  async _write(key, val) { const db=await _getDB(); db[key]=val; await _saveDB(db); },
 };
 
 // ── Google Drive download ─────────────────────────────────────
@@ -256,28 +254,34 @@ function driveDirectUrl(url) {
 }
 function downloadFile(url, filename) {
   const a = document.createElement('a');
-  a.href = driveDirectUrl(url); a.download = filename||'completed-work.pdf'; a.target='_blank';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  showToast('Download Started','Your file is downloading. If a confirmation page opens, click the download link.','success',6000);
+  a.href = driveDirectUrl(url);
+  a.download = filename || 'completed-work.pdf';
+  a.target   = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Download Started', 'Your file is downloading. If a confirmation page opens, click the download link.', 'success', 6000);
 }
 
-// ── Polling ───────────────────────────────────────────────────
-let _pollInterval = null, _pollCbs = [], _lastSyncTs = 0;
+// ── Polling (every 10s) ───────────────────────────────────────
+let _pollInterval = null;
+let _pollCbs      = [];
+let _lastSyncTs   = 0;
 
 function startPolling(cb) {
   if (cb) _pollCbs.push(cb);
-  if (_pollInterval || !SYNC.isReady()) return;
+  if (_pollInterval || !SYNC.keyReady()) return;
 
   _pollInterval = setInterval(async function() {
     try {
       const prev = JSON.stringify(_memCache);
-      _memCache  = null;       // force fresh remote read
+      _memCache  = null;
       _lastSync  = 0;
       await _getDB();
       _lastSyncTs = Date.now();
       updateSyncBadge(true);
       if (JSON.stringify(_memCache) !== prev) {
-        _pollCbs.forEach(function(fn){ try{fn();}catch(e){} });
+        _pollCbs.forEach(function(fn){ try{ fn(); } catch(e){} });
       }
     } catch(e) {
       updateSyncBadge(false);
@@ -291,9 +295,12 @@ function stopPolling() {
 }
 
 function updateSyncBadge(ok) {
-  const b = document.getElementById('sync-badge'); if (!b) return;
-  if (!SYNC.isReady()) {
+  const b = document.getElementById('sync-badge');
+  if (!b) return;
+  if (!SYNC.keyReady()) {
     b.innerHTML = '<span class="offline-badge">💾 Local Only</span>';
+  } else if (!_getBinId()) {
+    b.innerHTML = '<span class="offline-badge">⚙ Setting up…</span>';
   } else if (ok) {
     const t = _lastSyncTs ? new Date(_lastSyncTs).toLocaleTimeString('en-TZ',{hour:'2-digit',minute:'2-digit'}) : '…';
     b.innerHTML = '<span class="sync-badge">● Live ' + t + '</span>';
@@ -302,4 +309,4 @@ function updateSyncBadge(ok) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', function() { updateSyncBadge(SYNC.isReady()); });
+document.addEventListener('DOMContentLoaded', function() { updateSyncBadge(SYNC.keyReady()); });
