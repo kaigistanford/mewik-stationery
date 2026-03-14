@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — Mewik Stationery</title>
+  <meta name="theme-color" content="#0f2b22">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-page" style="padding:40px 24px">
+  <div class="auth-card" style="max-width:560px">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">M</div>
+      <div class="auth-logo-text">MEWIK <span>STATIONERY</span></div>
+    </div>
+
+    <h1 class="auth-title">Create Your Account</h1>
+    <p class="auth-subtitle">Join thousands of Tanzanian students who trust Mewik for academic support.</p>
+
+    <form id="signup-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="signup-name">Full Name <span style="color:var(--red-alert)">*</span></label>
+        <input type="text" id="signup-name" class="form-control" placeholder="e.g. Amina Juma Rashidi" autocomplete="name" required>
+        <div id="err-name" class="form-error"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="signup-email">Email Address <span style="color:var(--red-alert)">*</span></label>
+          <input type="email" id="signup-email" class="form-control" placeholder="your@email.com" autocomplete="email" required>
+          <div id="err-email" class="form-error"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-phone">WhatsApp Number <span style="color:var(--red-alert)">*</span></label>
+          <input type="tel" id="signup-phone" class="form-control" placeholder="e.g. 0744000000" autocomplete="tel" required>
+          <div id="err-phone" class="form-error"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="signup-university">University / College <span style="color:var(--red-alert)">*</span></label>
+        <input type="text" id="signup-university" class="form-control" placeholder="e.g. IRDP Dodoma, UDSM, Mzumbe University" required>
+        <div id="err-university" class="form-error"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="signup-program">Program / Course <span style="color:var(--red-alert)">*</span></label>
+          <input type="text" id="signup-program" class="form-control" placeholder="e.g. Rural Development Planning" required>
+          <div id="err-program" class="form-error"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-level">Level of Study <span style="color:var(--red-alert)">*</span></label>
+          <select id="signup-level" class="form-control" required>
+            <option value="">— Select level —</option>
+            <option>Certificate</option>
+            <option>Diploma</option>
+            <option>Bachelor's Degree</option>
+            <option>Postgraduate Diploma</option>
+            <option>Master's Degree</option>
+            <option>PhD</option>
+          </select>
+          <div id="err-level" class="form-error"></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="signup-password">Password <span style="color:var(--red-alert)">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="signup-password" class="form-control" placeholder="Minimum 6 characters" autocomplete="new-password" required>
+            <button type="button" class="password-toggle">👁️</button>
+          </div>
+          <div id="err-password" class="form-error"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-confirm">Confirm Password <span style="color:var(--red-alert)">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="signup-confirm" class="form-control" placeholder="Repeat your password" autocomplete="new-password" required>
+            <button type="button" class="password-toggle">👁️</button>
+          </div>
+          <div id="err-confirm" class="form-error"></div>
+        </div>
+      </div>
+
+      <div id="signup-error" class="form-error" style="margin-bottom:12px"></div>
+
+      <button type="submit" id="signup-btn" class="btn btn-secondary btn-full btn-lg">
+        Create Account
+      </button>
+    </form>
+
+    <div class="auth-switch">
+      Already have an account? <a href="login.html">Sign in</a>
+    </div>
+  </div>
+
+  <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);text-align:center;z-index:2">
+    <a href="index.html" style="color:rgba(255,255,255,0.40);font-size:0.8rem">← Back to Home</a>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/auth.js"></script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
+</body>
+</html>

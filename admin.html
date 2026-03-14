@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Mewik Stationery</title>
+  <meta name="theme-color" content="#0f2b22">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    .filter-tab { padding:8px 16px;border-radius:100px;font-size:0.82rem;font-weight:600;background:var(--cream);color:var(--gray-mid);border:none;cursor:pointer;transition:var(--transition); }
+    .filter-tab.active { background:var(--green-rich);color:var(--white); }
+    #req-filter-bar { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px; }
+  </style>
+</head>
+<body>
+<div class="dashboard-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">M</div>
+        MEWIK <span>STATIONERY</span>
+      </div>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" style="background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--green-deep)">A</div>
+      <div class="sidebar-user-name">Mewik Admin</div>
+      <div class="sidebar-user-role">Administrator</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Dashboard</div>
+      <a class="sidebar-link active" data-section="overview" href="#">
+        <span class="link-icon">📊</span> Overview
+      </a>
+      <a class="sidebar-link" data-section="requests" href="#">
+        <span class="link-icon">📋</span> All Requests
+      </a>
+      <a class="sidebar-link" data-section="logs" href="#">
+        <span class="link-icon">📁</span> System Logs
+      </a>
+      <a class="sidebar-link" data-section="users" href="#">
+        <span class="link-icon">👥</span> Users
+      </a>
+      <a class="sidebar-link" data-section="pricing" href="#">
+        <span class="link-icon">💰</span> Pricing
+      </a>
+      <a class="sidebar-link" href="index.html">
+        <span class="link-icon">🌐</span> View Site
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-link btn-full" data-action="logout" style="color:rgba(255,255,255,0.55)">
+        <span class="link-icon">🚪</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ─────────────────────────────────────── -->
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" style="background:none">
+          <span style="background:var(--charcoal)"></span>
+          <span style="background:var(--charcoal)"></span>
+          <span style="background:var(--charcoal)"></span>
+        </button>
+        <span class="topbar-title">Admin Overview</span>
+      </div>
+      <div class="topbar-right">
+        <div style="background:var(--gold-pale);color:var(--gold);padding:6px 14px;border-radius:100px;font-size:0.78rem;font-weight:700;letter-spacing:0.04em">
+          🔐 ADMIN MODE
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ── Overview ─────────────────────────────────────── -->
+      <section id="section-overview" class="dash-section">
+        <div style="margin-bottom:28px">
+          <h2 style="font-family:var(--font-display);font-size:1.5rem;color:var(--green-deep)">Admin Dashboard</h2>
+          <p style="color:var(--gray-mid);font-size:0.9rem;margin-top:4px">Manage all student requests, logs, and system settings.</p>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-widget">
+            <div class="stat-widget-icon blue">📬</div>
+            <div class="stat-widget-value" id="admin-stat-total">0</div>
+            <div class="stat-widget-label">Total Requests</div>
+          </div>
+          <div class="stat-widget">
+            <div class="stat-widget-icon green">⚙️</div>
+            <div class="stat-widget-value" id="admin-stat-active">0</div>
+            <div class="stat-widget-label">Active</div>
+          </div>
+          <div class="stat-widget">
+            <div class="stat-widget-icon gold">✅</div>
+            <div class="stat-widget-value" id="admin-stat-completed">0</div>
+            <div class="stat-widget-label">Completed</div>
+          </div>
+          <div class="stat-widget">
+            <div class="stat-widget-icon green">💵</div>
+            <div class="stat-widget-value" id="admin-stat-revenue" style="font-size:1.3rem">TZS 0</div>
+            <div class="stat-widget-label">Total Revenue</div>
+          </div>
+          <div class="stat-widget">
+            <div class="stat-widget-icon blue">👥</div>
+            <div class="stat-widget-value" id="admin-stat-users">0</div>
+            <div class="stat-widget-label">Students</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Requests</span>
+            <a href="#" class="btn btn-primary btn-sm sidebar-link" data-section="requests">View All</a>
+          </div>
+          <div id="admin-recent-list"><div class="spinner"></div></div>
+        </div>
+      </section>
+
+      <!-- ── All Requests ──────────────────────────────────── -->
+      <section id="section-requests" class="dash-section hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep)">All Requests</h2>
+        </div>
+        <div id="req-filter-bar"></div>
+        <div class="card">
+          <div id="admin-requests-list"><div class="spinner"></div></div>
+        </div>
+      </section>
+
+      <!-- ── System Logs ─────────────────────────────────── -->
+      <section id="section-logs" class="dash-section hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <div>
+            <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep)">System Logs</h2>
+            <p style="color:var(--gray-mid);font-size:0.85rem;margin-top:4px">Permanent records of all service transactions.</p>
+          </div>
+          <button onclick="exportAllLogs()" class="btn btn-primary">📥 Export to Excel</button>
+        </div>
+        <div class="card">
+          <div id="logs-list"><div class="spinner"></div></div>
+        </div>
+      </section>
+
+      <!-- ── Users ──────────────────────────────────────────── -->
+      <section id="section-users" class="dash-section hidden">
+        <div style="margin-bottom:24px">
+          <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep)">Registered Students</h2>
+        </div>
+        <div class="card">
+          <div id="users-list"><div class="spinner"></div></div>
+        </div>
+      </section>
+
+      <!-- ── Pricing ─────────────────────────────────────── -->
+      <section id="section-pricing" class="dash-section hidden">
+        <div style="margin-bottom:24px">
+          <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep)">Pricing Configuration</h2>
+          <p style="color:var(--gray-mid);font-size:0.85rem;margin-top:4px">Set minimum and maximum price ranges for each service (TZS).</p>
+        </div>
+        <div id="pricing-list"></div>
+      </section>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /dashboard-layout -->
+
+<!-- ── Edit Request Modal ─────────────────────────────────── -->
+<div class="modal-backdrop" id="edit-request-modal-backdrop" onclick="closeModal('edit-request')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Manage Request</div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--gray-mid);margin-top:3px" id="edit-req-id"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('edit-request')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Request Info -->
+      <div style="background:var(--cream);border-radius:var(--radius-md);padding:16px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.85rem">
+          <div><span style="color:var(--gray-mid);display:block;font-size:0.72rem;margin-bottom:3px">STUDENT</span><strong id="edit-req-student"></strong></div>
+          <div><span style="color:var(--gray-mid);display:block;font-size:0.72rem;margin-bottom:3px">SERVICE</span><strong id="edit-req-service"></strong></div>
+          <div><span style="color:var(--gray-mid);display:block;font-size:0.72rem;margin-bottom:3px">DEADLINE</span><strong id="edit-req-deadline"></strong></div>
+        </div>
+        <div style="margin-top:12px">
+          <span style="color:var(--gray-mid);display:block;font-size:0.72rem;margin-bottom:3px">DESCRIPTION</span>
+          <div style="font-size:0.88rem;color:var(--gray-dark)" id="edit-req-description"></div>
+        </div>
+        <div style="margin-top:12px">
+          <span style="color:var(--gray-mid);display:block;font-size:0.72rem;margin-bottom:3px">REQUIREMENTS</span>
+          <div style="font-size:0.88rem;color:var(--gray-dark)" id="edit-req-requirements-text"></div>
+        </div>
+      </div>
+
+      <!-- Status & Price -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="edit-status">Status</label>
+          <select id="edit-status" class="form-control">
+            <option>Submitted</option>
+            <option>Under Review</option>
+            <option>In Progress</option>
+            <option>Quality Check</option>
+            <option>Completed</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit-price">Price (TZS)</label>
+          <input type="number" id="edit-price" class="form-control" placeholder="e.g. 35000">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-payment">Payment Status</label>
+        <select id="edit-payment" class="form-control">
+          <option>Pending</option>
+          <option>Partial</option>
+          <option>Paid</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-admin-notes">Admin Notes (visible to student)</label>
+        <textarea id="edit-admin-notes" class="form-control" rows="3" placeholder="Update the student on progress, requirements, or payment details."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-delivery-link">Delivery File Link (Google Drive / PDF URL)</label>
+        <input type="url" id="edit-delivery-link" class="form-control" placeholder="https://drive.google.com/file/d/...">
+        <div class="form-hint">Paste a public Google Drive or direct PDF link. Student will see a Download button.</div>
+      </div>
+
+      <button id="save-request-btn" class="btn btn-secondary btn-full" style="margin-bottom:16px">
+        💾 Save Changes & Notify Student
+      </button>
+
+      <!-- Custom Notification -->
+      <div style="border-top:1px solid var(--gray-light);padding-top:16px">
+        <label class="form-label">Send Custom Message to Student</label>
+        <div style="display:flex;gap:10px">
+          <input type="text" id="custom-notif-msg" class="form-control" placeholder="Type your message here…">
+          <button id="send-notif-btn" class="btn btn-primary" style="white-space:nowrap">Send 📤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/notifications.js"></script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Services — Mewik Stationery</title>
+  <meta name="theme-color" content="#0f2b22">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-logo">M</div>
+      <span class="brand-name">MEWIK <span>STATIONERY</span></span>
+    </a>
+    <div class="navbar-links">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="services.html" class="nav-link active">Services</a>
+    </div>
+    <div class="navbar-actions">
+      <a href="login.html" class="btn btn-outline btn-sm">Sign In</a>
+      <a href="signup.html" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<div style="min-height:100vh;padding-top:100px;padding-bottom:80px;background:var(--cream)">
+  <div class="container">
+    <div class="text-center" style="margin-bottom:60px">
+      <span class="section-tag">Complete Service Catalog</span>
+      <h1 class="section-title">Academic & Secretarial Services</h1>
+      <p class="section-subtitle">Professional academic support for students at all levels across Tanzania.</p>
+    </div>
+
+    <div id="full-services-grid" class="services-grid">
+      <div class="spinner"></div>
+    </div>
+
+    <div style="margin-top:80px;background:var(--green-deep);border-radius:var(--radius-xl);padding:56px 40px;text-align:center">
+      <span class="section-tag" style="color:var(--gold-light)">Research Assistance</span>
+      <h2 style="font-family:var(--font-display);font-size:2rem;color:var(--white);margin:12px 0">Full Research Support</h2>
+      <p style="color:rgba(255,255,255,0.60);max-width:560px;margin:0 auto 36px">Choose your stage — we support you through every phase of the academic research process.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;max-width:800px;margin:0 auto">
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.25);border-radius:var(--radius-lg);padding:28px 20px;text-align:center">
+          <div style="font-size:2rem;margin-bottom:12px">📝</div>
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--gold);margin-bottom:8px">Proposal Writing</div>
+          <div style="font-size:0.83rem;color:rgba(255,255,255,0.55)">Research title, objectives, literature review, methodology, and chapter one to three.</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.25);border-radius:var(--radius-lg);padding:28px 20px;text-align:center">
+          <div style="font-size:2rem;margin-bottom:12px">📊</div>
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--gold);margin-bottom:8px">Research Report</div>
+          <div style="font-size:0.83rem;color:rgba(255,255,255,0.55)">Data analysis, findings, discussion, conclusions, recommendations, and bibliography.</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(201,168,76,0.35);border-radius:var(--radius-lg);padding:28px 20px;text-align:center;position:relative">
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--green-deep);font-size:0.7rem;font-weight:700;padding:3px 12px;border-radius:100px;letter-spacing:0.06em">BEST VALUE</div>
+          <div style="font-size:2rem;margin-bottom:12px">🎓</div>
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--gold);margin-bottom:8px">Full Package</div>
+          <div style="font-size:0.83rem;color:rgba(255,255,255,0.55)">Complete proposal + research report. Ideal for final year dissertation students.</div>
+        </div>
+      </div>
+      <a href="signup.html" class="btn btn-primary btn-lg" style="margin-top:36px">Request Research Assistance</a>
+    </div>
+
+    <div style="margin-top:60px;background:var(--white);border-radius:var(--radius-xl);padding:40px;border:1px solid rgba(15,43,34,0.07)">
+      <h3 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep);margin-bottom:20px">💬 Need Help Choosing?</h3>
+      <p style="color:var(--gray-mid);margin-bottom:24px">Not sure which service fits your needs? Contact us on WhatsApp and we will guide you.</p>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <a href="https://wa.me/255744000000" target="_blank" class="whatsapp-btn">💬 Chat on WhatsApp</a>
+        <a href="signup.html" class="btn btn-secondary">Create Account & Request</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  initSampleData();
+  const services = DB.getServices();
+  const pricing  = DB.getPricing();
+  const grid = document.getElementById('full-services-grid');
+
+  grid.innerHTML = services.map(s => {
+    const p = pricing.find(p => p.service.toLowerCase().includes(s.name.split(' ')[0].toLowerCase()));
+    const priceRange = p ? `TZS ${p.minPrice.toLocaleString()} – ${p.maxPrice.toLocaleString()}` : 'Contact for pricing';
+    return `
+      <div class="service-card fade-in">
+        ${s.badge ? `<div class="service-badge">${s.badge}</div>` : ''}
+        <div class="service-icon">${s.icon}</div>
+        <div class="service-name">${s.name}</div>
+        <div class="service-desc">${s.description}</div>
+        <div class="service-price">${priceRange}</div>
+        <a href="signup.html" class="btn btn-secondary btn-sm" style="margin-top:16px;width:100%;justify-content:center">Request Now →</a>
+      </div>`;
+  }).join('');
+});
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
+</body>
+</html>

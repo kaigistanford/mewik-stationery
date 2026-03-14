@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard — Mewik Stationery</title>
+  <meta name="theme-color" content="#0f2b22">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .filter-tab { padding:8px 16px;border-radius:100px;font-size:0.82rem;font-weight:600;background:var(--cream);color:var(--gray-mid);border:none;cursor:pointer;transition:var(--transition); }
+    .filter-tab.active { background:var(--green-rich);color:var(--white); }
+    .req-info { flex:1; }
+    .req-id { font-family:var(--font-mono);font-size:0.72rem;color:var(--gray-mid); }
+    .req-service { font-weight:600;font-size:0.95rem;color:var(--green-deep);margin:2px 0; }
+    .req-date { font-size:0.78rem;color:var(--gray-mid); }
+    .req-right { display:flex;flex-direction:column;align-items:flex-end;gap:6px; }
+    .request-row { display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(15,43,34,0.06);cursor:pointer;transition:var(--transition);flex-wrap:wrap;gap:12px; }
+    .request-row:hover { background:var(--cream); }
+    .request-row:last-child { border-bottom:none; }
+  </style>
+</head>
+<body>
+<div class="dashboard-layout">
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay"></div>
+
+  <!-- ── Sidebar ────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">M</div>
+        MEWIK <span>STATIONERY</span>
+      </div>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">?</div>
+      <div class="sidebar-user-name">Loading…</div>
+      <div class="sidebar-user-role">Student</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Menu</div>
+      <a class="sidebar-link active" data-section="overview" href="#">
+        <span class="link-icon">🏠</span> Overview
+      </a>
+      <a class="sidebar-link" data-section="requests" href="#">
+        <span class="link-icon">📋</span> My Requests
+      </a>
+      <a class="sidebar-link" data-section="new-request" href="#">
+        <span class="link-icon">✨</span> New Request
+      </a>
+      <a class="sidebar-link" data-section="history" href="#">
+        <span class="link-icon">📁</span> History
+      </a>
+
+      <div class="sidebar-section-label" style="margin-top:16px">Account</div>
+      <a class="sidebar-link" data-section="profile" href="#">
+        <span class="link-icon">👤</span> My Profile
+      </a>
+      <a class="sidebar-link" href="index.html">
+        <span class="link-icon">🌐</span> Home
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-link btn-full" data-action="logout" style="color:rgba(255,255,255,0.55)">
+        <span class="link-icon">🚪</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ───────────────────────────────────── -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" style="background:none">
+          <span style="background:var(--charcoal)"></span>
+          <span style="background:var(--charcoal)"></span>
+          <span style="background:var(--charcoal)"></span>
+        </button>
+        <span class="topbar-title">Dashboard Overview</span>
+      </div>
+      <div class="topbar-right">
+        <div style="position:relative">
+          <button class="notification-btn">🔔 <span class="notif-dot"></span></button>
+          <div class="notif-panel"></div>
+        </div>
+        <a href="#" data-section="new-request" class="btn btn-primary btn-sm sidebar-link">+ New Request</a>
+      </div>
+    </header>
+
+    <!-- ── Overview Section ───────────────────────────── -->
+    <div class="page-content">
+      <section id="section-overview" class="dash-section">
+        <div style="margin-bottom:28px">
+          <h2 style="font-family:var(--font-display);font-size:1.5rem;color:var(--green-deep)">
+            Good day, <span id="greeting-name">there</span> 👋
+          </h2>
+          <p style="color:var(--gray-mid);font-size:0.9rem;margin-top:4px">Here is a summary of your academic service activity.</p>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-widget">
+            <div class="stat-widget-icon green">📋</div>
+            <div class="stat-widget-value" id="stat-active">0</div>
+            <div class="stat-widget-label">Active Requests</div>
+          </div>
+          <div class="stat-widget">
+            <div class="stat-widget-icon gold">✅</div>
+            <div class="stat-widget-value" id="stat-completed">0</div>
+            <div class="stat-widget-label">Completed</div>
+          </div>
+          <div class="stat-widget">
+            <div class="stat-widget-icon blue">📊</div>
+            <div class="stat-widget-value" id="stat-total">0</div>
+            <div class="stat-widget-label">Total Requests</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:24px;flex-wrap:wrap" class="overview-grid">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Recent Requests</span>
+              <a href="#" class="btn btn-outline btn-sm sidebar-link" data-section="requests">View All</a>
+            </div>
+            <div id="recent-requests">
+              <div class="spinner"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🔔 Notifications</span>
+            </div>
+            <div id="recent-notifs"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── My Requests Section ────────────────────────── -->
+      <section id="section-requests" class="dash-section hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep)">Active Requests</h2>
+          <a href="#" class="btn btn-primary sidebar-link" data-section="new-request">+ New Request</a>
+        </div>
+        <div id="active-requests-list"><div class="spinner"></div></div>
+      </section>
+
+      <!-- ── New Request Section ─────────────────────────── -->
+      <section id="section-new-request" class="dash-section hidden">
+        <div style="max-width:680px">
+          <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep);margin-bottom:8px">Submit New Request</h2>
+          <p style="color:var(--gray-mid);font-size:0.9rem;margin-bottom:32px">Fill in the form below. Our team will review your request and respond promptly.</p>
+
+          <form id="request-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="req-service">Service Type <span style="color:var(--red-alert)">*</span></label>
+              <select id="req-service" class="form-control" required>
+                <option value="">— Select a service —</option>
+              </select>
+              <div id="price-range" style="font-size:0.82rem;color:var(--gold);margin-top:6px;font-weight:600"></div>
+            </div>
+
+            <!-- Research sub-options -->
+            <div id="research-options" style="display:none" class="form-group">
+              <label class="form-label" for="research-stage">Research Stage <span style="color:var(--red-alert)">*</span></label>
+              <select id="research-stage" class="form-control">
+                <option value="">— Select stage —</option>
+                <option value="Proposal Writing">Proposal Writing</option>
+                <option value="Research Report Writing">Research Report Writing</option>
+                <option value="Both Proposal + Full Research">Both Proposal + Full Research</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="req-description">Describe Your Requirements <span style="color:var(--red-alert)">*</span></label>
+              <textarea id="req-description" class="form-control" rows="4" placeholder="Briefly describe what you need. Include topic, subject, course unit, and any specific instructions from your lecturer." required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="req-requirements">Detailed Requirements / Notes</label>
+              <textarea id="req-requirements" class="form-control" rows="3" placeholder="Any additional instructions, formatting requirements, word count, citation style, etc."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="req-deadline">Submission Deadline <span style="color:var(--red-alert)">*</span></label>
+              <input type="date" id="req-deadline" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Supporting Files (optional)</label>
+              <div class="upload-zone">
+                <div class="upload-icon">📎</div>
+                <div class="upload-text">Click to upload or drag files here</div>
+                <div class="upload-hint">PDF, DOCX, JPG, PNG — Max 10MB each</div>
+              </div>
+              <input type="file" id="req-files" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip" style="display:none">
+              <div id="file-list" class="file-list"></div>
+            </div>
+
+            <div style="background:var(--cream);border:1px solid rgba(201,168,76,0.25);border-radius:var(--radius-md);padding:14px 18px;margin-bottom:24px;font-size:0.85rem;color:var(--gray-dark)">
+              📞 After submission, our team will contact you via WhatsApp to confirm pricing and next steps.
+            </div>
+
+            <button type="submit" class="btn btn-secondary btn-full btn-lg">
+              Submit Request 🚀
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ── History Section ────────────────────────────── -->
+      <section id="section-history" class="dash-section hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <div>
+            <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep)">Service History</h2>
+            <p style="color:var(--gray-mid);font-size:0.85rem;margin-top:4px">Completed work is available for download for 3 days.</p>
+          </div>
+        </div>
+        <div id="history-list"><div class="spinner"></div></div>
+      </section>
+
+      <!-- ── Profile Section ────────────────────────────── -->
+      <section id="section-profile" class="dash-section hidden">
+        <div style="max-width:560px">
+          <h2 style="font-family:var(--font-display);font-size:1.4rem;color:var(--green-deep);margin-bottom:24px">My Profile</h2>
+          <div class="card">
+            <div class="card-body">
+              <form id="profile-form" novalidate>
+                <div class="form-group">
+                  <label class="form-label" for="profile-name">Full Name</label>
+                  <input type="text" id="profile-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="profile-phone">WhatsApp Number</label>
+                  <input type="tel" id="profile-phone" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="profile-university">University / College</label>
+                  <input type="text" id="profile-university" class="form-control" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="profile-program">Program</label>
+                    <input type="text" id="profile-program" class="form-control" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="profile-level">Level</label>
+                    <select id="profile-level" class="form-control">
+                      <option>Certificate</option>
+                      <option>Diploma</option>
+                      <option>Bachelor's Degree</option>
+                      <option>Postgraduate Diploma</option>
+                      <option>Master's Degree</option>
+                      <option>PhD</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="border-top:1px solid var(--gray-light);margin:20px 0;padding-top:20px">
+                  <p style="font-size:0.85rem;color:var(--gray-mid);margin-bottom:16px">Change Password (leave blank to keep current)</p>
+                  <div class="form-group">
+                    <label class="form-label" for="profile-currentpass">Current Password</label>
+                    <input type="password" id="profile-currentpass" class="form-control" placeholder="Enter current password">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="profile-newpass">New Password</label>
+                    <input type="password" id="profile-newpass" class="form-control" placeholder="Minimum 6 characters">
+                  </div>
+                </div>
+
+                <button type="submit" id="profile-btn" class="btn btn-secondary btn-full">Save Changes</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /dashboard-layout -->
+
+<!-- ── Request Detail Modal ──────────────────────────────── -->
+<div class="modal-backdrop" id="request-modal-backdrop" onclick="closeModal('request-modal')">
+  <div class="modal" onclick="event.stopPropagation()" id="request-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-req-service">Request Details</div>
+        <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--gray-mid);margin-top:3px" id="modal-req-id"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('request-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px" id="modal-req-status"></div>
+
+      <div class="progress-wrap" style="margin-bottom:8px">
+        <div class="progress-bar" id="modal-progress" style="width:0%"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0">
+        <div><div style="font-size:0.75rem;color:var(--gray-mid);margin-bottom:3px">SUBMITTED</div><div style="font-weight:600;font-size:0.9rem" id="modal-req-submitted">—</div></div>
+        <div><div style="font-size:0.75rem;color:var(--gray-mid);margin-bottom:3px">DEADLINE</div><div style="font-weight:600;font-size:0.9rem" id="modal-req-deadline">—</div></div>
+        <div><div style="font-size:0.75rem;color:var(--gray-mid);margin-bottom:3px">PRICE</div><div style="font-weight:600;font-size:0.9rem" id="modal-req-price">—</div></div>
+        <div><div style="font-size:0.75rem;color:var(--gray-mid);margin-bottom:3px">PAYMENT</div><div style="font-weight:600;font-size:0.9rem" id="modal-req-payment">—</div></div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">Description</div>
+        <div style="font-size:0.9rem;color:var(--gray-dark);background:var(--cream);padding:12px 14px;border-radius:var(--radius-md)" id="modal-req-desc"></div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">Admin Notes</div>
+        <div style="font-size:0.9rem;color:var(--gray-dark);background:var(--gold-pale);padding:12px 14px;border-radius:var(--radius-md);border-left:3px solid var(--gold)" id="modal-req-notes"></div>
+      </div>
+
+      <a href="#" id="modal-download-btn" target="_blank" class="btn btn-primary btn-full btn-lg" style="display:none;margin-top:8px">
+        ⬇️ Download Completed Work (PDF)
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/notifications.js"></script>
+<script>
+  // Overview grid responsive
+  document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.querySelector('.overview-grid');
+    function adjustGrid() {
+      if (grid) grid.style.gridTemplateColumns = window.innerWidth < 900 ? '1fr' : '1fr 360px';
+    }
+    adjustGrid();
+    window.addEventListener('resize', adjustGrid);
+
+    // Set min deadline to tomorrow
+    const deadlineInput = document.getElementById('req-deadline');
+    if (deadlineInput) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      deadlineInput.min = tomorrow.toISOString().split('T')[0];
+    }
+  });
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
+</body>
+</html>

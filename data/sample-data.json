@@ -1,0 +1,90 @@
+{
+  "_comment": "This file is for reference only. All data is stored in localStorage in the browser.",
+  "users": [
+    {
+      "id": "admin-001",
+      "fullName": "Mewik Admin",
+      "email": "admin@mewik.co.tz",
+      "phone": "0744000000",
+      "university": "Mewik Stationery",
+      "program": "Administration",
+      "level": "Admin",
+      "role": "admin",
+      "createdAt": "2024-01-01T08:00:00.000Z"
+    },
+    {
+      "id": "USR-SAMPLE-001",
+      "fullName": "Fatuma Juma Rashidi",
+      "email": "fatuma@student.tz",
+      "phone": "0712345678",
+      "university": "IRDP Dodoma",
+      "program": "Rural Development Planning",
+      "level": "Diploma",
+      "role": "student",
+      "createdAt": "2024-06-15T10:30:00.000Z"
+    }
+  ],
+  "requests": [
+    {
+      "id": "REQ-SAMPLE-001",
+      "userId": "USR-SAMPLE-001",
+      "userName": "Fatuma Juma Rashidi",
+      "userEmail": "fatuma@student.tz",
+      "university": "IRDP Dodoma",
+      "serviceType": "Research Assistance — Proposal Writing",
+      "description": "I need help writing a research proposal on effects of e-waste on health in Dodoma region.",
+      "requirements": "APA citation style, minimum 30 pages, include methodology chapter.",
+      "deadline": "2024-11-30",
+      "status": "Completed",
+      "adminNotes": "Proposal completed. Please review and send feedback.",
+      "price": 80000,
+      "paymentStatus": "Paid",
+      "deliveryFile": "https://drive.google.com/file/d/SAMPLE_FILE_ID/view",
+      "createdAt": "2024-10-01T09:00:00.000Z",
+      "completedAt": "2024-10-14T16:00:00.000Z"
+    }
+  ],
+  "services": [
+    {
+      "id": "svc-1",
+      "name": "Assignment Assistance",
+      "icon": "📝",
+      "description": "Professional assistance for coursework assignments.",
+      "badge": "Popular",
+      "category": "Academic"
+    },
+    {
+      "id": "svc-2",
+      "name": "Field Attachment Report",
+      "icon": "🏛️",
+      "description": "Field attachment/internship report writing.",
+      "badge": "Fast",
+      "category": "Academic"
+    },
+    {
+      "id": "svc-3",
+      "name": "Socio-Economic Profile",
+      "icon": "📊",
+      "description": "Group project socio-economic profiles for wards and districts.",
+      "badge": "Group",
+      "category": "Academic"
+    },
+    {
+      "id": "svc-4",
+      "name": "Research Assistance",
+      "icon": "🔬",
+      "description": "Full research support from proposal to final report.",
+      "badge": "Premium",
+      "category": "Research"
+    }
+  ],
+  "pricing": [
+    { "id": "p-1", "service": "Assignment Assistance",     "minPrice": 10000,  "maxPrice": 50000,  "currency": "TZS" },
+    { "id": "p-2", "service": "Field Attachment Report",   "minPrice": 30000,  "maxPrice": 80000,  "currency": "TZS" },
+    { "id": "p-3", "service": "Socio-Economic Profile",    "minPrice": 40000,  "maxPrice": 100000, "currency": "TZS" },
+    { "id": "p-4", "service": "Research Proposal Writing", "minPrice": 50000,  "maxPrice": 120000, "currency": "TZS" },
+    { "id": "p-5", "service": "Research Report Writing",   "minPrice": 80000,  "maxPrice": 200000, "currency": "TZS" },
+    { "id": "p-6", "service": "Full Research Package",     "minPrice": 120000, "maxPrice": 300000, "currency": "TZS" }
+  ],
+  "logs": []
+}

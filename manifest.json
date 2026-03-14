@@ -1,0 +1,40 @@
+{
+  "name": "Mewik Stationery",
+  "short_name": "Mewik",
+  "description": "Academic assistance and secretarial services for Tanzanian university students",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f2b22",
+  "theme_color": "#0f2b22",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Request",
+      "url": "./dashboard.html#new-request",
+      "description": "Submit a new service request"
+    },
+    {
+      "name": "My Dashboard",
+      "url": "./dashboard.html",
+      "description": "View your dashboard"
+    }
+  ]
+}

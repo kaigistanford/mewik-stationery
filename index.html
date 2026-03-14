@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mewik Stationery — Academic Services & Secretarial Solutions</title>
+  <meta name="description" content="Professional academic assistance and secretarial services for university students in Tanzania. Assignments, research, reports and more.">
+  <meta name="theme-color" content="#0f2b22">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────────────── -->
+<nav class="navbar" id="main-nav">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-logo">M</div>
+      <span class="brand-name">MEWIK <span>STATIONERY</span></span>
+    </a>
+
+    <div class="navbar-links">
+      <a href="#services" class="nav-link">Services</a>
+      <a href="#how" class="nav-link">How It Works</a>
+      <a href="#testimonials" class="nav-link">Reviews</a>
+      <a href="#contact" class="nav-link">Contact</a>
+    </div>
+
+    <div class="navbar-actions">
+      <a href="login.html" class="btn btn-outline btn-sm">Sign In</a>
+      <a href="signup.html" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+
+    <div class="hamburger" id="landing-hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" style="display:none;background:var(--green-deep);padding:16px 24px;border-top:1px solid rgba(255,255,255,0.08)">
+    <a href="#services" class="nav-link" style="display:block;padding:12px 0">Services</a>
+    <a href="#how" class="nav-link" style="display:block;padding:12px 0">How It Works</a>
+    <a href="#testimonials" class="nav-link" style="display:block;padding:12px 0">Reviews</a>
+    <a href="#contact" class="nav-link" style="display:block;padding:12px 0">Contact</a>
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+      <a href="login.html" class="btn btn-outline btn-sm">Sign In</a>
+      <a href="signup.html" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────── -->
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-pattern"></div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span>✦</span> Tanzania's Academic Services Platform
+      </div>
+      <h1 class="hero-title">
+        Your <em>Academic Success</em>,<br>Professionally Delivered
+      </h1>
+      <p class="hero-subtitle">
+        Mewik Stationery provides expert academic assistance and secretarial services for university and college students across Tanzania — from assignments to full research reports.
+      </p>
+      <div class="hero-cta">
+        <a href="signup.html" class="btn btn-primary btn-lg">Start Your Request →</a>
+        <a href="#services" class="btn btn-outline btn-lg">View Services</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat-card">
+      <div class="stat-number">500+</div>
+      <div class="stat-label">Students Served</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">98%</div>
+      <div class="stat-label">Satisfaction Rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">24hrs</div>
+      <div class="stat-label">Avg. Turnaround</div>
+    </div>
+  </div>
+
+  <div style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:2;animation:fadeSlideUp 1s 0.8s both">
+    <a href="#services" style="color:rgba(255,255,255,0.4);font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:6px">
+      Explore Services
+      <span style="font-size:1.2rem">↓</span>
+    </a>
+  </div>
+</section>
+
+<!-- ── Services ───────────────────────────────────────────── -->
+<section class="services-section" id="services">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-tag">Our Services</span>
+      <h2 class="section-title">What We Offer</h2>
+      <p class="section-subtitle">Comprehensive academic and secretarial support tailored to Tanzanian university students.</p>
+    </div>
+
+    <div class="services-grid" id="services-grid">
+      <!-- Populated by JS -->
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ───────────────────────────────────────── -->
+<section class="how-section" id="how">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-tag" style="color:var(--gold-light)">Simple Process</span>
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-subtitle">From request to delivery in four clear steps.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <div class="step-title">Create Account</div>
+        <div class="step-desc">Sign up with your university email and student details. It takes less than two minutes.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <div class="step-title">Submit Request</div>
+        <div class="step-desc">Select a service, describe your requirements, set your deadline, and upload any supporting documents.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <div class="step-title">Track Progress</div>
+        <div class="step-desc">Monitor your request in real time through five progress stages. Receive notifications at every update.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <div class="step-title">Download & Submit</div>
+        <div class="step-desc">Once completed, download your finished work in PDF format directly from your dashboard.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing Preview ────────────────────────────────────── -->
+<section style="padding:80px 0;background:var(--cream-dark)">
+  <div class="container">
+    <div class="text-center mb-3">
+      <span class="section-tag">Transparent Pricing</span>
+      <h2 class="section-title">Affordable Rates</h2>
+      <p class="section-subtitle">Fair, competitive pricing for every service. All amounts in Tanzanian Shillings.</p>
+    </div>
+
+    <div id="pricing-preview" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-top:48px">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Testimonials ───────────────────────────────────────── -->
+<section class="testimonials-section" id="testimonials">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-tag">Student Reviews</span>
+      <h2 class="section-title">What Students Say</h2>
+      <p class="section-subtitle">Honest feedback from students we have helped across Tanzania.</p>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"My field attachment report was done professionally and on time. The writing followed the IRDP format perfectly. I will definitely use Mewik again."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">F</div>
+          <div>
+            <div class="author-name">Fatuma M.</div>
+            <div class="author-meta">IRDP Dodoma, Year 3</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"I was struggling with my research proposal. The team helped me from the title page to the reference list. My supervisor was very impressed."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">J</div>
+          <div>
+            <div class="author-name">Joseph K.</div>
+            <div class="author-meta">UDSM, Bachelor of Arts</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★☆</div>
+        <p class="testimonial-text">"Fast service and good communication. The assignment was submitted two days before my deadline. WhatsApp updates made everything smooth."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">A</div>
+          <div>
+            <div class="author-name">Amina S.</div>
+            <div class="author-meta">Mzumbe University, Diploma</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Contact ────────────────────────────────────────────── -->
+<section class="contact-section" id="contact">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <h3>Get in Touch</h3>
+        <p>Have questions before you submit? Reach us via WhatsApp or email. We respond promptly during business hours.</p>
+
+        <div class="contact-item">
+          <span>📍</span>
+          <span>Dar es Salaam, Tanzania</span>
+        </div>
+        <div class="contact-item">
+          <span>📱</span>
+          <span>+255 744 000 000</span>
+        </div>
+        <div class="contact-item">
+          <span>✉️</span>
+          <span>info@mewikstationery.co.tz</span>
+        </div>
+        <div class="contact-item">
+          <span>⏰</span>
+          <span>Mon – Sat: 8:00 AM – 8:00 PM</span>
+        </div>
+
+        <a href="https://wa.me/255744000000?text=Hello%20Mewik%20Stationery,%20I%20need%20academic%20assistance" 
+           target="_blank" class="whatsapp-btn">
+          <span>💬</span> Chat on WhatsApp
+        </a>
+      </div>
+
+      <div>
+        <div class="card" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.10)">
+          <div class="card-body">
+            <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--white);margin-bottom:16px">Quick Start</h3>
+            <p style="color:rgba(255,255,255,0.60);font-size:0.9rem;margin-bottom:24px">Create your account and submit a request in under 5 minutes.</p>
+            <a href="signup.html" class="btn btn-primary btn-full btn-lg" style="margin-bottom:12px">Create Free Account</a>
+            <a href="login.html" class="btn btn-full" style="background:rgba(255,255,255,0.08);color:var(--white);padding:14px">Already have an account? Sign In</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2024 Mewik Stationery. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="admin.html" style="opacity:0.3">Admin</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Install Banner ─────────────────────────────────────── -->
+<div class="install-banner hidden" id="install-banner">
+  <span class="install-icon">📲</span>
+  <div class="install-text">
+    <strong>Install Mewik Stationery</strong>
+    <span>Add to Home Screen for quick access</span>
+  </div>
+  <div class="install-actions">
+    <button class="install-dismiss" onclick="dismissInstall()">Later</button>
+    <button class="install-btn" onclick="installPWA()">Install</button>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  // ── Hamburger ──────────────────────────────────────────────
+  document.getElementById('landing-hamburger').addEventListener('click', () => {
+    const menu = document.getElementById('mobile-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // ── Close mobile menu on link click ───────────────────────
+  document.querySelectorAll('#mobile-menu a').forEach(a => {
+    a.addEventListener('click', () => {
+      document.getElementById('mobile-menu').style.display = 'none';
+    });
+  });
+
+  // ── Navbar scroll effect ───────────────────────────────────
+  window.addEventListener('scroll', () => {
+    const nav = document.getElementById('main-nav');
+    if (window.scrollY > 40) {
+      nav.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+    } else {
+      nav.style.boxShadow = 'none';
+    }
+  });
+
+  // ── Services Grid ──────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    initSampleData();
+    const services = DB.getServices();
+    const pricing  = DB.getPricing();
+    const grid = document.getElementById('services-grid');
+
+    grid.innerHTML = services.map(s => {
+      const p = pricing.find(p => p.service.toLowerCase().includes(s.name.split(' ')[0].toLowerCase()));
+      const priceRange = p ? `TZS ${p.minPrice.toLocaleString()} – ${p.maxPrice.toLocaleString()}` : 'Contact for pricing';
+      return `
+        <div class="service-card fade-in">
+          ${s.badge ? `<div class="service-badge">${s.badge}</div>` : ''}
+          <div class="service-icon">${s.icon}</div>
+          <div class="service-name">${s.name}</div>
+          <div class="service-desc">${s.description}</div>
+          <div class="service-price">${priceRange}</div>
+          <a href="signup.html" class="btn btn-secondary btn-sm" style="margin-top:16px;width:100%;justify-content:center">Request This Service</a>
+        </div>`;
+    }).join('');
+
+    // Pricing preview
+    const priceEl = document.getElementById('pricing-preview');
+    priceEl.innerHTML = pricing.map(p => `
+      <div class="card" style="text-align:center;padding:28px 20px">
+        <div style="font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--green-deep);margin-bottom:8px">${p.service}</div>
+        <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;color:var(--gold)">${p.minPrice.toLocaleString()}</div>
+        <div style="font-size:0.78rem;color:var(--gray-mid)">up to ${p.maxPrice.toLocaleString()} TZS</div>
+        <a href="signup.html" class="btn btn-outline btn-sm" style="margin-top:16px">Get Started</a>
+      </div>`).join('');
+  });
+
+  // ── PWA Install ────────────────────────────────────────────
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('install-banner');
+    if (!sessionStorage.getItem('install_dismissed')) {
+      banner.classList.remove('hidden');
+    }
+  });
+
+  function installPWA() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(choice => {
+        if (choice.outcome === 'accepted') {
+          document.getElementById('install-banner').classList.add('hidden');
+        }
+        deferredPrompt = null;
+      });
+    }
+  }
+  function dismissInstall() {
+    document.getElementById('install-banner').classList.add('hidden');
+    sessionStorage.setItem('install_dismissed', '1');
+  }
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
+</body>
+</html>
