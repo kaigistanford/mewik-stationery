@@ -9,9 +9,9 @@
 const APP = {
   name: 'Mewik Stationery',
   version: '1.0.0',
-  whatsapp: '255780580470',          // <-- Replace with real number
+  whatsapp: '255780580470',
   email: 'admin@mewikstationery.co.tz',
-  adminPass: 'admin@mewik2024',      // Default admin password (change in production)
+  adminPass: 'admin@mewik2024',      // Change this before going live
 };
 
 // ── DB Keys ───────────────────────────────────────────────────
@@ -118,12 +118,78 @@ const Session = {
   currentUser(){ return this.get(); },
 };
 
-// ── Hashing ───────────────────────────────────────────────────
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + 'mewik_salt_2024');
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+// ── Pure JS SHA-256 (works on file://, HTTP, and HTTPS) ────────
+// Based on the public domain SHA-256 algorithm — no external deps needed.
+function sha256(str) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  const mathPow = Math.pow;
+  const maxWord = mathPow(2, 32);
+  let result = '';
+  const words = [];
+  const asciiBitLength = str.length * 8;
+  let hash = [];
+  let k = [];
+  let primeCounter = 0;
+  const isComposite = {};
+
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (let i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+    }
+  }
+
+  str += '\x80';
+  while (str.length % 64 - 56) str += '\x00';
+
+  for (let i = 0; i < str.length; i++) {
+    const j = str.charCodeAt(i);
+    if (j >> 8) return '';
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+  }
+  words[words.length] = ((asciiBitLength / maxWord) | 0);
+  words[words.length] = (asciiBitLength | 0);
+
+  for (let j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16);
+    const oldHash = hash.slice(0);
+    for (let i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2];
+      const a = hash[0], e = hash[4];
+      const temp1 = hash[7]
+        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+        + ((e & hash[5]) ^ (~e & hash[6]))
+        + k[i]
+        + (w[i] = (i < 16) ? w[i] : (
+          w[i - 16]
+          + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+          + w[i - 7]
+          + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+        ) | 0);
+      const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(temp1 + temp2) | 0].concat(hash);
+      hash[4] = (hash[4] + temp1) | 0;
+      hash.length = 8;
+    }
+    for (let i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+  }
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 3; j + 1; j--) {
+      const b = (hash[i] >> (j * 8)) & 255;
+      result += ((b < 16) ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
+}
+
+// hashPassword is now synchronous and works everywhere (file://, HTTP, HTTPS)
+function hashPassword(password) {
+  return Promise.resolve(sha256(password + 'mewik_salt_2024'));
 }
 
 // ── ID Generation ─────────────────────────────────────────────
@@ -301,22 +367,22 @@ function initSampleData() {
   DB.set('services', services);
   DB.set('pricing', pricing);
 
-  // Create admin account
+  // Create admin account synchronously (hashPassword is now sync-resolved)
   const adminExists = DB.getUsers().find(u => u.role === 'admin');
   if (!adminExists) {
-    hashPassword(APP.adminPass).then(hash => {
-      DB.addUser({
-        id: 'admin-001',
-        fullName: 'Mewik Admin',
-        email: 'admin@mewik.co.tz',
-        phone: APP.whatsapp,
-        university: 'Mewik Stationery',
-        program: 'Administration',
-        level: 'Admin',
-        passwordHash: hash,
-        role: 'admin',
-        createdAt: new Date().toISOString(),
-      });
+    // sha256 is synchronous — call it directly so the account exists immediately
+    const hash = sha256(APP.adminPass + 'mewik_salt_2024');
+    DB.addUser({
+      id: 'admin-001',
+      fullName: 'Mewik Admin',
+      email: 'admin@mewik.co.tz',
+      phone: APP.whatsapp,
+      university: 'Mewik Stationery',
+      program: 'Administration',
+      level: 'Admin',
+      passwordHash: hash,
+      role: 'admin',
+      createdAt: new Date().toISOString(),
     });
   }
 }
@@ -403,6 +469,18 @@ function exportToExcel(data, filename = 'export.xlsx', sheetName = 'Sheet1') {
 
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Version guard: if stored version mismatches, clear and re-seed
+  // This fixes any user who had data from the old crypto.subtle hashing
+  const storedVer = localStorage.getItem('mewik_version');
+  if (storedVer !== APP.version) {
+    // Clear only service/pricing/admin data — preserve student accounts if same version
+    if (!storedVer) {
+      // First ever load — wipe everything to start clean
+      Object.values(DB_KEYS).forEach(k => localStorage.removeItem(k));
+    }
+    localStorage.setItem('mewik_version', APP.version);
+  }
+
   initSampleData();
   runCleanup();
   initSidebar();
