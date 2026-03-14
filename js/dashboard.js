@@ -1,440 +1,289 @@
 // ============================================================
-//  MEWIK STATIONERY — dashboard.js
-//  Student dashboard: requests, progress, downloads
+//  MEWIK STATIONERY — dashboard.js  v4.0
+//  Student dashboard — polls for live sync every 12s
 // ============================================================
-
 'use strict';
 
-let currentUser = null;
+let currentUser  = null;
+let myRequests   = [];
+let currentRatingReqId = null;
+let currentStars = 0;
+const starLabels = ['','Poor','Fair','Good','Very Good','Excellent'];
 
-// ── Init ──────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async function() {
   if (!requireLogin()) return;
   currentUser = Session.currentUser();
-  if (currentUser.role === 'admin') {
-    window.location.href = 'admin.html';
-    return;
-  }
+  if (currentUser.role === 'admin') { window.location.href = 'admin.html'; return; }
 
-  // Populate sidebar user info
   const nameEl = document.querySelector('.sidebar-user-name');
   const initEl = document.querySelector('.sidebar-avatar');
   if (nameEl) nameEl.textContent = currentUser.fullName;
   if (initEl) initEl.textContent = currentUser.fullName.charAt(0).toUpperCase();
 
-  // Topbar greeting
-  const greetEl = document.getElementById('greeting-name');
-  if (greetEl) greetEl.textContent = currentUser.fullName.split(' ')[0];
+  // Load my requests
+  myRequests = await DB.getRequestsByUser(currentUser.id).catch(() => []);
+  await updateNotifDot(currentUser.id);
 
-  // Update notif dot
-  updateNotifDot(currentUser.id);
-  renderNotifPanel(currentUser.id);
-
-  // Load active section based on hash
-  const hash = window.location.hash.replace('#', '') || 'overview';
-  showSection(hash);
+  // Start polling — refresh every 12s
+  startPolling(async function() {
+    const fresh = await DB.getRequestsByUser(currentUser.id).catch(() => []);
+    // Check if anything changed
+    if (JSON.stringify(fresh) !== JSON.stringify(myRequests)) {
+      myRequests = fresh;
+      refreshCurrentSection();
+    }
+    await updateNotifDot(currentUser.id);
+  });
 
   // Nav links
-  document.querySelectorAll('.sidebar-link[data-section]').forEach(link => {
-    link.addEventListener('click', e => {
+  document.querySelectorAll('.sidebar-link[data-section]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
       e.preventDefault();
-      const section = link.dataset.section;
-      history.pushState(null, '', `#${section}`);
-      showSection(section);
-      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      const sec = link.dataset.section;
+      history.pushState(null, '', '#' + sec);
+      showSection(sec);
+      document.querySelectorAll('.sidebar-link').forEach(function(l){l.classList.remove('active');});
       link.classList.add('active');
     });
   });
+  document.querySelectorAll('[data-action="logout"]').forEach(function(b){ b.addEventListener('click', logout); });
 
-  // Logout
-  document.querySelectorAll('[data-action="logout"]').forEach(b => b.addEventListener('click', logout));
+  const hash = window.location.hash.replace('#','') || 'overview';
+  showSection(hash);
 
-  // Request form
-  const reqForm = document.getElementById('request-form');
-  if (reqForm) reqForm.addEventListener('submit', handleRequestSubmit);
+  // Set min deadline to tomorrow
+  const dl = document.getElementById('req-deadline');
+  if (dl) { const t=new Date(); t.setDate(t.getDate()+1); dl.min=t.toISOString().split('T')[0]; }
 
-  // Profile form
-  const profileForm = document.getElementById('profile-form');
-  if (profileForm) profileForm.addEventListener('submit', handleProfileUpdate);
+  // Rating prompt after 2s
+  setTimeout(checkRatingPrompt, 2000);
 });
 
-// ── Section Switch ─────────────────────────────────────────────
+function refreshCurrentSection() {
+  const active = document.querySelector('.dash-section:not(.hidden)');
+  if (!active) return;
+  const id = active.id.replace('section-','');
+  if (id==='overview') renderOverview();
+  if (id==='requests') renderRequests();
+  if (id==='history')  renderHistory();
+}
+
+// ── Sections ──────────────────────────────────────────────────
 function showSection(name) {
-  document.querySelectorAll('.dash-section').forEach(s => s.classList.add('hidden'));
-  const sec = document.getElementById(`section-${name}`);
+  document.querySelectorAll('.dash-section').forEach(function(s){s.classList.add('hidden');});
+  const sec = document.getElementById('section-'+name);
   if (sec) sec.classList.remove('hidden');
-
-  const topTitle = document.querySelector('.topbar-title');
-  const titles = {
-    overview: 'Dashboard Overview',
-    requests: 'My Requests',
-    'new-request': 'New Service Request',
-    history:  'Service History',
-    profile:  'My Profile',
-  };
-  if (topTitle) topTitle.textContent = titles[name] || 'Dashboard';
-
-  // Render section content
-  if (name === 'overview')     renderOverview();
-  if (name === 'requests')     renderRequests();
-  if (name === 'new-request')  initRequestForm();
-  if (name === 'history')      renderHistory();
-  if (name === 'profile')      initProfileForm();
+  const titles = {overview:'Dashboard Overview',requests:'My Requests','new-request':'New Service Request',history:'Service History',profile:'My Profile'};
+  const t = document.querySelector('.topbar-title'); if(t) t.textContent = titles[name]||'Dashboard';
+  if (name==='overview')    renderOverview();
+  if (name==='requests')    renderRequests();
+  if (name==='new-request') initRequestForm();
+  if (name==='history')     renderHistory();
+  if (name==='profile')     initProfileForm();
 }
 
 // ── Overview ──────────────────────────────────────────────────
 function renderOverview() {
-  const reqs = DB.getRequestsByUser(currentUser.id).filter(r => !r.hiddenFromUser);
-  const active = reqs.filter(r => r.status !== 'Completed' && r.status !== 'Cancelled');
-  const completed = reqs.filter(r => r.status === 'Completed');
-
+  const reqs      = myRequests.filter(function(r){return !r.hiddenFromUser;});
+  const active    = reqs.filter(function(r){return r.status!=='Completed'&&r.status!=='Cancelled';});
+  const completed = reqs.filter(function(r){return r.status==='Completed';});
   setEl('stat-active',    active.length);
   setEl('stat-completed', completed.length);
   setEl('stat-total',     reqs.length);
+  const greet = document.getElementById('greeting-name');
+  if (greet) greet.textContent = currentUser.fullName.split(' ')[0];
 
-  // Recent requests (last 5)
-  const recent = reqs.slice().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
-  const recentEl = document.getElementById('recent-requests');
-  if (!recentEl) return;
+  // Recent notifs async
+  DB.getNotifs(currentUser.id).then(function(notifs){
+    const el = document.getElementById('recent-notifs'); if(!el)return;
+    const recent = notifs.slice(0,4);
+    el.innerHTML = recent.length
+      ? recent.map(function(n){return '<div class="notif-item '+(n.read?'':'unread')+'"><div class="notif-item-title">'+esc(n.title)+'</div><div class="notif-item-text">'+esc(n.message)+'</div><div class="notif-item-time">'+timeAgo(n.createdAt)+'</div></div>';}).join('')
+      : '<div class="notif-item"><div class="notif-item-text" style="padding:14px;text-align:center;color:var(--gray-400)">No notifications yet</div></div>';
+  }).catch(function(){});
 
+  const recentEl = document.getElementById('recent-requests'); if(!recentEl)return;
+  const recent = reqs.slice().sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);}).slice(0,5);
   if (!recent.length) {
-    recentEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No requests yet</div><div class="empty-text">Submit your first service request to get started.</div></div>`;
+    recentEl.innerHTML='<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-title">No requests yet</div><div class="empty-text">Submit your first service request to get started.</div></div>';
     return;
   }
-
-  recentEl.innerHTML = recent.map(r => `
-    <div class="request-row" onclick="showRequestDetail('${r.id}')">
-      <div class="req-info">
-        <div class="req-id">${esc(r.id)}</div>
-        <div class="req-service">${esc(r.serviceType)}</div>
-        <div class="req-date">${formatDate(r.createdAt)}</div>
-      </div>
-      <div class="req-right">
-        ${statusBadge(r.status)}
-        ${r.status === 'Completed' && r.deliveryFile ?
-          `<a href="${r.deliveryFile}" target="_blank" class="btn btn-primary btn-sm mt-1">⬇ Download PDF</a>` : ''}
-      </div>
-    </div>
-  `).join('');
-
-  // Notifications panel
-  const notifs = DB.getNotifs(currentUser.id).slice().reverse().slice(0, 3);
-  const notifEl = document.getElementById('recent-notifs');
-  if (notifEl) {
-    notifEl.innerHTML = notifs.length ? notifs.map(n => `
-      <div class="notif-item ${n.read ? '' : 'unread'}">
-        <div class="notif-item-title">${esc(n.title)}</div>
-        <div class="notif-item-text">${esc(n.message)}</div>
-        <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
-      </div>
-    `).join('') : '<div class="notif-item"><div class="notif-item-text" style="padding:12px 0;text-align:center">No notifications</div></div>';
-  }
+  recentEl.innerHTML = recent.map(function(r){
+    return '<div class="request-row" onclick="showRequestDetail(\''+r.id+'\')">'
+      +'<div class="req-info"><div class="req-id">'+esc(r.id)+'</div><div class="req-service">'+esc(r.serviceType)+'</div><div class="req-date">'+formatDate(r.createdAt)+'</div></div>'
+      +'<div class="req-right">'+statusBadge(r.status)
+      +(r.status==='Completed'&&r.deliveryFile?'<button class="btn btn-download btn-sm" onclick="event.stopPropagation();triggerDownload(\''+r.id+'\')">⬇ Download</button>':'')
+      +'</div></div>';
+  }).join('');
 }
 
-// ── My Requests ───────────────────────────────────────────────
+// ── Active Requests ───────────────────────────────────────────
 function renderRequests() {
-  const reqs = DB.getRequestsByUser(currentUser.id)
-    .filter(r => !r.hiddenFromUser && r.status !== 'Completed')
-    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  const container = document.getElementById('active-requests-list');
-  if (!container) return;
-
+  const reqs = myRequests.filter(function(r){return !r.hiddenFromUser&&r.status!=='Completed';})
+    .sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
+  const container = document.getElementById('active-requests-list'); if(!container)return;
   if (!reqs.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No active requests</div><div class="empty-text">Submit a new request to get started.</div></div>`;
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No active requests</div><div class="empty-text">Submit a new request to get started.</div></div>';
     return;
   }
-
-  container.innerHTML = reqs.map(r => {
+  container.innerHTML = reqs.map(function(r){
     const pct = getProgressPct(r.status);
-    return `
-      <div class="card mb-3">
-        <div class="card-body">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-            <div>
-              <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--gray-mid);margin-bottom:4px;">${esc(r.id)}</div>
-              <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:600;color:var(--green-deep)">${esc(r.serviceType)}</div>
-              <div style="font-size:0.82rem;color:var(--gray-mid);margin-top:2px;">Submitted: ${formatDate(r.createdAt)} · Deadline: ${formatDate(r.deadline)}</div>
-            </div>
-            <div>${statusBadge(r.status)}</div>
-          </div>
-
-          <div class="progress-steps">
-            ${PROGRESS_STAGES.map((stage, i) => {
-              const stageIdx = PROGRESS_STAGES.indexOf(r.status);
-              const cls = i < stageIdx ? 'done' : (i === stageIdx ? 'active' : '');
-              return `
-                <div class="progress-step">
-                  <div class="step-dot ${cls}">${i < stageIdx ? '✓' : i+1}</div>
-                  <div class="step-label ${cls}">${stage}</div>
-                </div>`;
-            }).join('')}
-          </div>
-
-          <div class="progress-wrap" style="margin:12px 0 16px">
-            <div class="progress-bar" style="width:${pct}%"></div>
-          </div>
-
-          ${r.adminNotes ? `<div style="background:var(--cream);border-left:3px solid var(--gold);padding:10px 14px;border-radius:6px;font-size:0.85rem;color:var(--gray-dark);margin-bottom:14px;"><strong>Admin Note:</strong> ${esc(r.adminNotes)}</div>` : ''}
-
-          ${r.price ? `<div style="font-size:0.82rem;color:var(--gray-mid)">Price: <strong style="color:var(--green-rich)">TZS ${Number(r.price).toLocaleString()}</strong> · Payment: <strong>${esc(r.paymentStatus)}</strong></div>` : ''}
-        </div>
-      </div>`;
+    return '<div class="card mb-3"><div class="card-body">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px">'
+      +'<div><div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--gray-400);margin-bottom:3px">'+esc(r.id)+'</div>'
+      +'<div style="font-family:var(--font-display);font-size:1.05rem;font-weight:600;color:var(--gray-900)">'+esc(r.serviceType)+'</div>'
+      +'<div style="font-size:0.78rem;color:var(--gray-400);margin-top:2px">Submitted: '+formatDate(r.createdAt)+' · Deadline: '+formatDate(r.deadline)+'</div></div>'
+      +statusBadge(r.status)+'</div>'
+      +'<div class="progress-steps">'
+      +PROGRESS_STAGES.map(function(stage,i){
+          const si=PROGRESS_STAGES.indexOf(r.status),cls=i<si?'done':(i===si?'active':'');
+          return '<div class="progress-step"><div class="step-dot '+cls+'">'+(i<si?'✓':i+1)+'</div><div class="step-label '+cls+'">'+stage+'</div></div>';
+        }).join('')
+      +'</div>'
+      +'<div class="progress-wrap" style="margin:10px 0 14px"><div class="progress-bar" style="width:'+pct+'%"></div></div>'
+      +(r.adminNotes?'<div style="background:var(--navy-50);border-left:3px solid var(--navy-600);padding:9px 13px;border-radius:6px;font-size:0.84rem;margin-bottom:12px"><strong>Admin Note:</strong> '+esc(r.adminNotes)+'</div>':'')
+      +(r.price?'<div style="font-size:0.8rem;color:var(--gray-500)">Price: <strong style="color:var(--navy-800)">TZS '+Number(r.price).toLocaleString()+'</strong> · Payment: <strong>'+esc(r.paymentStatus)+'</strong></div>':'')
+      +'</div></div>';
   }).join('');
 }
 
 // ── History ───────────────────────────────────────────────────
-function renderHistory() {
-  const reqs = DB.getRequestsByUser(currentUser.id)
-    .filter(r => r.status === 'Completed' && !r.hiddenFromUser)
-    .sort((a,b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
-
-  const container = document.getElementById('history-list');
-  if (!container) return;
-
+async function renderHistory() {
+  const reqs = myRequests.filter(function(r){return r.status==='Completed'&&!r.hiddenFromUser;})
+    .sort(function(a,b){return new Date(b.completedAt||b.createdAt)-new Date(a.completedAt||a.createdAt);});
+  const container = document.getElementById('history-list'); if(!container)return;
   if (!reqs.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🏆</div><div class="empty-title">No completed work yet</div><div class="empty-text">Completed requests appear here for 3 days.</div></div>`;
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">🏆</div><div class="empty-title">No completed work yet</div><div class="empty-text">Completed requests appear here for 3 days.</div></div>';
     return;
   }
+  const rows = await Promise.all(reqs.map(async function(r){
+    const rated = await DB.getRatingByRequestId(r.id).catch(()=>null);
+    return '<tr>'
+      +'<td><span style="font-family:var(--font-mono);font-size:0.72rem">'+esc(r.id)+'</span></td>'
+      +'<td>'+esc(r.serviceType)+'</td>'
+      +'<td>'+formatDate(r.createdAt)+'</td>'
+      +'<td>'+formatDate(r.completedAt)+'</td>'
+      +'<td>'+(r.price?Number(r.price).toLocaleString():'—')+'</td>'
+      +'<td>'+(r.deliveryFile
+          ?'<button class="btn btn-download btn-sm" onclick="triggerDownload(\''+r.id+'\')">⬇ Download</button>'
+          :'<span style="color:var(--gray-400);font-size:0.82rem">Pending</span>')
+      +'</td>'
+      +'<td>'+(rated
+          ?'<span>'+renderStars(rated.stars,'0.85rem')+'</span>'
+          :'<button class="btn btn-warning btn-sm" onclick="openRatingModal(\''+r.id+'\')">⭐ Rate</button>')
+      +'</td></tr>';
+  }));
+  container.innerHTML='<div class="table-wrapper"><table><thead><tr><th>Request ID</th><th>Service</th><th>Submitted</th><th>Completed</th><th>Price (TZS)</th><th>Download</th><th>Rating</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
+}
 
-  container.innerHTML = `
-    <div class="table-wrapper">
-      <table>
-        <thead><tr>
-          <th>Request ID</th><th>Service</th><th>Submitted</th><th>Completed</th><th>Price (TZS)</th><th>Download</th><th>Rating</th>
-        </tr></thead>
-        <tbody>
-          ${reqs.map(r => {
-            const alreadyRated = DB.getRatingByRequestId(r.id);
-            return `<tr>
-              <td><span style="font-family:var(--font-mono);font-size:0.78rem">${esc(r.id)}</span></td>
-              <td>${esc(r.serviceType)}</td>
-              <td>${formatDate(r.createdAt)}</td>
-              <td>${formatDate(r.completedAt)}</td>
-              <td>${r.price ? Number(r.price).toLocaleString() : '—'}</td>
-              <td>${r.deliveryFile ? `<a href="${r.deliveryFile}" target="_blank" class="btn btn-primary btn-sm">⬇ PDF</a>` : '—'}</td>
-              <td>${alreadyRated
-                ? `<span style="color:var(--gold)">${renderStars(alreadyRated.stars,'0.9rem')}</span>`
-                : `<button class="btn btn-outline btn-sm" onclick="openRatingModal('${r.id}')">⭐ Rate</button>`
-              }</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>`;
+// ── Direct Download via Google Drive link ─────────────────────
+function triggerDownload(reqId) {
+  const req = myRequests.find(function(r){return r.id===reqId;});
+  if (!req || !req.deliveryFile) { showToast('Not Ready','The file is not available yet.','warning'); return; }
+  const ext = (req.deliveryFile.match(/\.([a-z]+)(?:\?|$)/i)||[])[1] || 'pdf';
+  const filename = (req.serviceType||'completed-work').replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.'+ext;
+  downloadFile(req.deliveryFile, filename);
 }
 
 // ── Request Form ──────────────────────────────────────────────
-function initRequestForm() {
-  const services = DB.getServices();
-  const pricing  = DB.getPricing();
-  const svcSel = document.getElementById('req-service');
-  if (!svcSel) return;
-
-  svcSel.innerHTML = '<option value="">— Select a service —</option>' +
-    services.map(s => `<option value="${s.name}">${s.icon} ${s.name}</option>`).join('');
-
-  // Research sub-option toggle
-  svcSel.addEventListener('change', () => {
-    const researchOpts = document.getElementById('research-options');
-    if (researchOpts) {
-      researchOpts.style.display = svcSel.value === 'Research Assistance' ? 'block' : 'none';
-    }
-    // Show price range
-    const pricingEl = document.getElementById('price-range');
-    if (pricingEl) {
-      const svcName = svcSel.value;
-      const match = pricing.find(p => p.service.toLowerCase().includes(svcName.split(' ')[0].toLowerCase()));
-      pricingEl.textContent = match ? `Estimated: TZS ${match.minPrice.toLocaleString()} – ${match.maxPrice.toLocaleString()}` : '';
-    }
+async function initRequestForm() {
+  const services = await DB.getServices().catch(()=>[]);
+  const pricing  = await DB.getPricing().catch(()=>[]);
+  const svcSel   = document.getElementById('req-service'); if(!svcSel)return;
+  svcSel.innerHTML = '<option value="">— Select a service —</option>'
+    + services.map(function(s){return '<option value="'+s.name+'">'+s.icon+' '+s.name+'</option>';}).join('');
+  svcSel.addEventListener('change', function() {
+    const ro=document.getElementById('research-options'); if(ro)ro.style.display=svcSel.value==='Research Assistance'?'block':'none';
+    const pr=document.getElementById('price-range'); if(pr){const m=pricing.find(function(p){return p.service.toLowerCase().includes(svcSel.value.split(' ')[0].toLowerCase());});pr.textContent=m?'Estimated: TZS '+m.minPrice.toLocaleString()+' – '+m.maxPrice.toLocaleString():'';}
   });
-
-  // File upload
-  initFileUpload('req-files', 'file-list');
+  const form=document.getElementById('request-form');
+  if(form){const f=form.cloneNode(true);form.parentNode.replaceChild(f,form);f.addEventListener('submit',handleRequestSubmit);}
 }
 
-function handleRequestSubmit(e) {
+async function handleRequestSubmit(e) {
   e.preventDefault();
-  const serviceType = document.getElementById('req-service').value;
-  const description = document.getElementById('req-description').value.trim();
-  const requirements= document.getElementById('req-requirements').value.trim();
-  const deadline    = document.getElementById('req-deadline').value;
-  const researchStage = document.getElementById('research-stage')?.value;
+  const serviceType=document.getElementById('req-service').value;
+  const description=document.getElementById('req-description').value.trim();
+  const requirements=document.getElementById('req-requirements').value.trim();
+  const deadline=document.getElementById('req-deadline').value;
+  const researchStage=document.getElementById('research-stage')?.value||'';
+  if(!serviceType){showToast('Missing','Please select a service type.','warning');return;}
+  if(!description){showToast('Missing','Please describe your requirements.','warning');return;}
+  if(!deadline){showToast('Missing','Please set a deadline.','warning');return;}
 
-  if (!serviceType) { showToast('Missing Field', 'Please select a service type.', 'warning'); return; }
-  if (!description)  { showToast('Missing Field', 'Please describe your requirements.', 'warning'); return; }
-  if (!deadline)     { showToast('Missing Field', 'Please set a deadline.', 'warning'); return; }
+  const finalService=serviceType==='Research Assistance'&&researchStage?'Research Assistance — '+researchStage:serviceType;
+  const btn=e.target.querySelector('button[type="submit"]');
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner spinner-sm"></span> Submitting…';}
 
-  const finalService = serviceType === 'Research Assistance' && researchStage
-    ? `Research Assistance — ${researchStage}` : serviceType;
-
-  const req = {
-    id:            generateId('REQ'),
-    userId:        currentUser.id,
-    userName:      currentUser.fullName,
-    userEmail:     currentUser.email,
-    userPhone:     currentUser.phone,
-    university:    currentUser.university,
-    program:       currentUser.program,
-    serviceType:   finalService,
-    description,
-    requirements,
-    deadline,
-    status:        'Submitted',
-    adminNotes:    '',
-    price:         null,
-    paymentStatus: 'Pending',
-    deliveryFile:  null,
-    createdAt:     new Date().toISOString(),
-    completedAt:   null,
-    hiddenFromUser: false,
-  };
-
-  DB.addRequest(req);
-
-  // Admin log
-  DB.addLog({
-    id:            generateId('LOG'),
-    requestId:     req.id,
-    userName:      currentUser.fullName,
-    serviceType:   finalService,
-    submittedAt:   req.createdAt,
-    completedAt:   null,
-    price:         null,
-    status:        'Submitted',
-  });
-
-  // Notification to user
-  DB.addNotif({
-    id:        generateId('NTF'),
-    userId:    currentUser.id,
-    title:     '✅ Request Submitted',
-    message:   `Your request for "${finalService}" has been submitted. We will review it shortly.`,
-    createdAt: new Date().toISOString(),
-    read:      false,
-  });
-
-  showToast('Request Submitted!', `Your request ID is ${req.id}.`, 'success');
-  document.getElementById('request-form').reset();
-
-  setTimeout(() => {
-    showSection('requests');
-    history.pushState(null, '', '#requests');
-    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-    document.querySelector('.sidebar-link[data-section="requests"]')?.classList.add('active');
-  }, 1200);
+  const req={id:generateId('REQ'),userId:currentUser.id,userName:currentUser.fullName,userEmail:currentUser.email,userPhone:currentUser.phone,university:currentUser.university,program:currentUser.program,serviceType:finalService,description,requirements,deadline,status:'Submitted',adminNotes:'',price:null,paymentStatus:'Pending',deliveryFile:null,createdAt:new Date().toISOString(),completedAt:null,hiddenFromUser:false};
+  try {
+    await DB.addRequest(req);
+    await DB.addLog({id:generateId('LOG'),requestId:req.id,userName:currentUser.fullName,serviceType:finalService,submittedAt:req.createdAt,completedAt:null,price:null,status:'Submitted'});
+    await DB.addNotif({id:generateId('NTF'),userId:currentUser.id,title:'✅ Request Submitted',message:'Your request for "'+finalService+'" has been submitted. We will review it shortly.',createdAt:new Date().toISOString(),read:false});
+    myRequests.unshift(req);
+    showToast('Submitted!','Request ID: '+req.id,'success');
+    e.target.reset();
+    setTimeout(function(){showSection('requests');history.pushState(null,'','#requests');document.querySelectorAll('.sidebar-link').forEach(function(l){l.classList.remove('active');});document.querySelector('.sidebar-link[data-section="requests"]')?.classList.add('active');},1200);
+  } catch(err){ showToast('Error','Failed to submit. Please try again.','error'); }
+  if(btn){btn.disabled=false;btn.innerHTML='Submit Request 🚀';}
 }
 
-// ── File Upload ───────────────────────────────────────────────
-function initFileUpload(inputId, listId) {
-  const zone = document.querySelector('.upload-zone');
-  const input = document.getElementById(inputId);
-  const list  = document.getElementById(listId);
-  if (!zone || !input || !list) return;
-
-  let files = [];
-
-  zone.addEventListener('click', () => input.click());
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
-    addFiles(Array.from(e.dataTransfer.files));
-  });
-  input.addEventListener('change', () => addFiles(Array.from(input.files)));
-
-  function addFiles(newFiles) {
-    files = [...files, ...newFiles];
-    renderFiles();
-  }
-  function renderFiles() {
-    list.innerHTML = files.map((f, i) => `
-      <div class="file-item">
-        <span class="file-item-icon">${fileIcon(f.name)}</span>
-        <span class="file-item-name">${esc(f.name)}</span>
-        <span class="file-item-size">${formatBytes(f.size)}</span>
-        <span class="file-remove" onclick="removeFile(${i})">✕</span>
-      </div>`).join('');
-  }
-  window.removeFile = (i) => { files.splice(i, 1); renderFiles(); };
-}
-
-function fileIcon(name) {
-  const ext = name.split('.').pop().toLowerCase();
-  if (['pdf'].includes(ext)) return '📕';
-  if (['doc','docx'].includes(ext)) return '📘';
-  if (['jpg','jpeg','png','gif'].includes(ext)) return '🖼️';
-  if (['zip','rar'].includes(ext)) return '🗜️';
-  return '📄';
-}
-function formatBytes(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
-  return (bytes/1048576).toFixed(1) + ' MB';
-}
-
-// ── Profile Form ──────────────────────────────────────────────
-function initProfileForm() {
-  const user = Session.currentUser();
-  if (!user) return;
-  const fields = { 'profile-name': user.fullName, 'profile-phone': user.phone,
-    'profile-university': user.university, 'profile-program': user.program };
-  for (const [id, val] of Object.entries(fields)) {
-    const el = document.getElementById(id);
-    if (el) el.value = val || '';
-  }
-  const lvl = document.getElementById('profile-level');
-  if (lvl) lvl.value = user.level || '';
-}
-
-// ── Request Detail Modal ───────────────────────────────────────
+// ── Request Detail Modal ──────────────────────────────────────
 function showRequestDetail(reqId) {
-  const req = DB.getRequestById(reqId);
-  if (!req) return;
+  const req=myRequests.find(function(r){return r.id===reqId;}); if(!req)return;
+  const pct=getProgressPct(req.status);
+  setEl('modal-req-id',req.id); setEl('modal-req-service',req.serviceType);
+  setEl('modal-req-desc',req.description||'—'); setEl('modal-req-deadline',formatDate(req.deadline));
+  setEl('modal-req-submitted',formatDateTime(req.createdAt));
+  setEl('modal-req-notes',req.adminNotes||'No notes yet.');
+  setEl('modal-req-price',req.price?'TZS '+Number(req.price).toLocaleString():'Not quoted yet');
+  setEl('modal-req-payment',req.paymentStatus||'—');
+  const statusEl=document.getElementById('modal-req-status'); if(statusEl)statusEl.innerHTML=statusBadge(req.status);
+  const pb=document.getElementById('modal-progress'); if(pb)pb.style.width=pct+'%';
+  const dlBtn=document.getElementById('modal-download-btn');
+  if(dlBtn){dlBtn.style.display=req.deliveryFile?'inline-flex':'none'; dlBtn.onclick=function(){triggerDownload(reqId);};}
+  const b=document.getElementById('request-modal-backdrop'); if(b)b.classList.add('open');
+}
+function closeModal(id){const b=document.getElementById(id+'-modal-backdrop')||document.getElementById(id+'-backdrop');if(b)b.classList.remove('open');}
 
-  const pct = getProgressPct(req.status);
-  const modal = document.getElementById('request-modal');
-  if (!modal) return;
+// ── Profile ───────────────────────────────────────────────────
+function initProfileForm(){
+  const u=Session.currentUser(); if(!u)return;
+  const map={fullName:'profile-name',phone:'profile-phone',university:'profile-university',program:'profile-program'};
+  Object.keys(map).forEach(function(k){const el=document.getElementById(map[k]);if(el)el.value=u[k]||'';});
+  const lv=document.getElementById('profile-level');if(lv)lv.value=u.level||'';
+}
 
-  document.getElementById('modal-req-id').textContent    = req.id;
-  document.getElementById('modal-req-service').textContent = req.serviceType;
-  document.getElementById('modal-req-status').innerHTML  = statusBadge(req.status);
-  document.getElementById('modal-req-desc').textContent  = req.description || '—';
-  document.getElementById('modal-req-deadline').textContent = formatDate(req.deadline);
-  document.getElementById('modal-req-submitted').textContent = formatDateTime(req.createdAt);
-  document.getElementById('modal-req-notes').textContent = req.adminNotes || 'No notes yet.';
-  document.getElementById('modal-req-price').textContent = req.price ? `TZS ${Number(req.price).toLocaleString()}` : 'Not quoted yet';
-  document.getElementById('modal-req-payment').textContent = req.paymentStatus || '—';
-
-  const progressEl = document.getElementById('modal-progress');
-  if (progressEl) progressEl.style.width = `${pct}%`;
-
-  const dlBtn = document.getElementById('modal-download-btn');
-  if (dlBtn) {
-    if (req.deliveryFile) {
-      dlBtn.href = req.deliveryFile;
-      dlBtn.style.display = 'inline-flex';
-    } else {
-      dlBtn.style.display = 'none';
+// ── Rating ────────────────────────────────────────────────────
+async function checkRatingPrompt(){
+  const completed=myRequests.filter(function(r){return r.status==='Completed'&&!r.hiddenFromUser;});
+  for(const r of completed){
+    const rated=await DB.getRatingByRequestId(r.id).catch(()=>null);
+    if(!rated&&!sessionStorage.getItem('rp_'+r.id)){
+      sessionStorage.setItem('rp_'+r.id,'1');
+      setTimeout(function(){openRatingModal(r.id);},800);
+      break;
     }
   }
-
-  openModal('request-modal');
 }
-
-// ── Modal Helpers ─────────────────────────────────────────────
-function openModal(id) {
-  const backdrop = document.getElementById(`${id}-backdrop`);
-  if (backdrop) backdrop.classList.add('open');
+function openRatingModal(reqId){
+  const req=myRequests.find(function(r){return r.id===reqId;}); if(!req)return;
+  currentRatingReqId=reqId; currentStars=0;
+  document.querySelectorAll('.star-btn').forEach(function(b){b.classList.remove('selected');});
+  const lbl=document.getElementById('star-label');if(lbl)lbl.textContent='Tap a star to rate';
+  const sn=document.getElementById('rating-service-name');if(sn)sn.textContent=req.serviceType;
+  const cmt=document.getElementById('rating-comment');if(cmt)cmt.value='';
+  const b=document.getElementById('rating-modal-backdrop');if(b)b.classList.add('open');
 }
-function closeModal(id) {
-  const backdrop = document.getElementById(`${id}-backdrop`);
-  if (backdrop) backdrop.classList.remove('open');
+function selectStar(n){currentStars=n;document.querySelectorAll('.star-btn').forEach(function(b){b.classList.toggle('selected',Number(b.dataset.star)<=n);});const lbl=document.getElementById('star-label');if(lbl)lbl.textContent=starLabels[n]||'';}
+async function submitRating(){
+  if(!currentStars){showToast('Select Stars','Please tap a star.','warning');return;}
+  const req=myRequests.find(function(r){return r.id===currentRatingReqId;}); if(!req)return;
+  const already=await DB.getRatingByRequestId(currentRatingReqId).catch(()=>null);
+  if(already){showToast('Already Rated','You already rated this service.','info');closeModal('rating');return;}
+  const u=Session.currentUser(),comment=document.getElementById('rating-comment')?.value.trim()||'';
+  await DB.addRating({id:generateId('RTG'),userId:u.id,userName:u.fullName,userUniversity:u.university+(u.level?', '+u.level:''),requestId:currentRatingReqId,serviceType:req.serviceType,stars:currentStars,comment,createdAt:new Date().toISOString(),approved:true,visible:true});
+  closeModal('rating');
+  showToast('Thank You! ⭐','Your rating has been submitted.','success');
 }
-
-// ── Utility ───────────────────────────────────────────────────
-function setEl(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = val;
-}
+function closeRatingModal(){closeModal('rating');}

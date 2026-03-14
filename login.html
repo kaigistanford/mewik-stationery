@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In — Mewik Stationery</title>
-  <meta name="theme-color" content="#0f2b22">
+  <meta name="theme-color" content="#0d1b2a">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
+  
 </head>
 <body>
 <div class="auth-page">
@@ -16,51 +18,39 @@
       <div class="auth-logo-icon">M</div>
       <div class="auth-logo-text">MEWIK <span>STATIONERY</span></div>
     </div>
-
     <h1 class="auth-title">Welcome Back</h1>
     <p class="auth-subtitle">Sign in to access your dashboard and track your requests.</p>
-
     <form id="login-form" novalidate>
       <div class="form-group">
-        <label class="form-label" for="login-email">Email Address</label>
+        <label class="form-label">Email Address</label>
         <div class="input-group">
           <span class="input-icon">✉️</span>
           <input type="email" id="login-email" class="form-control" placeholder="you@university.ac.tz" autocomplete="email" required>
         </div>
       </div>
-
       <div class="form-group">
-        <label class="form-label" for="login-password">Password</label>
+        <label class="form-label">Password</label>
         <div class="input-group" style="position:relative">
           <span class="input-icon">🔒</span>
-          <input type="password" id="login-password" class="form-control" placeholder="Enter your password" autocomplete="current-password" required>
+          <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
           <button type="button" class="password-toggle">👁️</button>
         </div>
       </div>
-
       <div id="login-error" class="form-error"></div>
-
-      <button type="submit" id="login-btn" class="btn btn-secondary btn-full btn-lg" style="margin-top:8px">
-        Sign In
-      </button>
+      <button type="submit" id="login-btn" class="btn btn-primary btn-full btn-lg" style="margin-top:8px">Sign In</button>
     </form>
-
-    <div class="auth-switch">
-      Don't have an account? <a href="signup.html">Create one free</a>
-    </div>
-
-    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-light);font-size:0.78rem;color:var(--gray-mid)">
-      <strong>Admin access:</strong> admin@mewik.co.tz / admin@mewik2024
+    <div class="auth-switch">Don't have an account? <a href="signup.html">Create one free</a></div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200);font-size:0.78rem;color:var(--gray-400)">
+      <strong>Admin:</strong> admin@mewik.co.tz / admin@mewik2024
     </div>
   </div>
-
-  <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);text-align:center;z-index:2">
-    <a href="index.html" style="color:rgba(255,255,255,0.40);font-size:0.8rem">← Back to Home</a>
+  <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:2">
+    <a href="index.html" style="color:rgba(255,255,255,0.35);font-size:0.8rem">← Back to Home</a>
   </div>
 </div>
-
-<script src="js/app.js"></script>
-<script src="js/auth.js"></script>
-<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
+  <script src="js/sync-config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").catch(function(){});}</script>
 </body>
 </html>

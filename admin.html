@@ -84,6 +84,7 @@
         <span class="topbar-title">Admin Overview</span>
       </div>
       <div class="topbar-right">
+        <div id="sync-badge" style="margin-right:4px"></div>
         <div style="background:var(--gold-pale);color:var(--gold);padding:6px 14px;border-radius:100px;font-size:0.78rem;font-weight:700;letter-spacing:0.04em">🔐 ADMIN</div>
       </div>
     </header>
@@ -336,10 +337,15 @@
         <label class="form-label">Admin Notes (visible to student)</label>
         <textarea id="edit-admin-notes" class="form-control" rows="3" placeholder="Update the student on progress, pricing, or any requirements."></textarea>
       </div>
+      <!-- Google Drive Delivery Link -->
       <div class="form-group">
-        <label class="form-label">Delivery File Link (Google Drive or direct PDF URL)</label>
-        <input type="url" id="edit-delivery-link" class="form-control" placeholder="https://drive.google.com/file/d/…">
-        <div class="form-hint">Paste a public shareable link. A Download PDF button will appear for the student.</div>
+        <label class="form-label">📁 Delivery File — Google Drive Link</label>
+        <input type="url" id="edit-delivery-link" class="form-control" placeholder="https://drive.google.com/file/d/…/view">
+        <div id="delivery-file-status" style="margin-top:6px;font-size:0.8rem"></div>
+        <div class="form-hint" style="margin-top:5px">
+          <strong>How to get the link:</strong> Upload your PDF to Google Drive → right-click the file → "Get link" → change to "Anyone with the link" → Copy link → paste above.
+          The student will see a <strong>Download</strong> button that downloads the file directly to their device.
+        </div>
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
@@ -358,8 +364,8 @@
     </div>
   </div>
 </div>
-
-<script src="js/app.js"></script>
+  <script src="js/sync-config.js"></script>
+  <script src="js/app.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/notifications.js"></script>
