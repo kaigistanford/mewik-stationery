@@ -7,7 +7,7 @@
 
 const APP = {
   name:      'Mewik Stationery',
-  version:   '1.1.0',
+  version:   '1.2.0',
   whatsapp:  '255621501329',
   whatsapp2: '255780580470',
   phone:     '+255 616 832 924',
@@ -417,20 +417,58 @@ function exportToExcel(data, filename, sheetName) {
 
 // ── DOMContentLoaded ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  const storedVer = localStorage.getItem('mewik_version');
+  var storedVer = localStorage.getItem('mewik_version');
+
   if (storedVer !== APP.version) {
-    if (!storedVer) {
-      Object.values(DB_KEYS).forEach(function(k) { localStorage.removeItem(k); });
+    // Version changed (or first load) — wipe all cached data and re-seed fresh.
+    // This ensures every browser picks up the latest services, settings, ratings
+    // and admin account regardless of what was stored previously.
+    // Student user accounts and their requests are preserved by re-adding them after
+    // the wipe, so existing users are not logged out unnecessarily.
+
+    var savedUsers    = [];
+    var savedRequests = [];
+    var savedLogs     = [];
+    var savedNotifs   = [];
+    var savedRatings  = [];
+
+    // Preserve real student/request data across version bumps
+    try { savedUsers    = JSON.parse(localStorage.getItem(DB_KEYS.users))    || []; } catch(e) {}
+    try { savedRequests = JSON.parse(localStorage.getItem(DB_KEYS.requests)) || []; } catch(e) {}
+    try { savedLogs     = JSON.parse(localStorage.getItem(DB_KEYS.logs))     || []; } catch(e) {}
+    try { savedNotifs   = JSON.parse(localStorage.getItem(DB_KEYS.notifs))   || []; } catch(e) {}
+    try { savedRatings  = JSON.parse(localStorage.getItem(DB_KEYS.ratings))  || []; } catch(e) {}
+
+    // Wipe everything
+    Object.values(DB_KEYS).forEach(function(k) { localStorage.removeItem(k); });
+    localStorage.removeItem('mewik_version');
+
+    // Restore preserved data
+    if (savedUsers.length)    localStorage.setItem(DB_KEYS.users,    JSON.stringify(savedUsers));
+    if (savedRequests.length) localStorage.setItem(DB_KEYS.requests, JSON.stringify(savedRequests));
+    if (savedLogs.length)     localStorage.setItem(DB_KEYS.logs,     JSON.stringify(savedLogs));
+    if (savedNotifs.length)   localStorage.setItem(DB_KEYS.notifs,   JSON.stringify(savedNotifs));
+    if (savedRatings.length)  localStorage.setItem(DB_KEYS.ratings,  JSON.stringify(savedRatings));
+
+    // Also re-hash the admin password in case user objects carry old hash format
+    var users = JSON.parse(localStorage.getItem(DB_KEYS.users) || '[]');
+    var adminUser = users.find(function(u) { return u.role === 'admin'; });
+    if (adminUser) {
+      adminUser.passwordHash = sha256(APP.adminPass + 'mewik_salt_2024');
+      adminUser.email        = 'admin@mewik.co.tz';
+      localStorage.setItem(DB_KEYS.users, JSON.stringify(users));
     }
+
     localStorage.setItem('mewik_version', APP.version);
   }
+
   initSampleData();
   runCleanup();
   initSidebar();
   initNotifBell();
-  const path = window.location.pathname.split('/').pop();
+  var path = window.location.pathname.split('/').pop();
   document.querySelectorAll('.sidebar-link').forEach(function(link) {
-    const href = link.getAttribute('href');
+    var href = link.getAttribute('href');
     if (href && href.includes(path)) link.classList.add('active');
   });
 });
