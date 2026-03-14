@@ -1300,3 +1300,21 @@ tbody tr:last-child td { border-bottom: none; }
   .modal-header { padding: 20px 20px 16px; }
   .modal-body { padding: 16px 20px 24px; }
 }
+
+/* ── Star Rating Widget ──────────────────────────────────────── */
+.star-rating-row { display: flex; gap: 4px; align-items: center; }
+.star-filled  { color: var(--gold); }
+.star-empty   { color: var(--gray-light); }
+.rating-avg-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--gold-pale); border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 100px; padding: 4px 14px;
+  font-size: 0.82rem; font-weight: 700; color: var(--gold);
+}
+/* Manage button hover */
+.btn-secondary:hover { background: var(--green-mid); }
+
+/* Settings grid responsive */
+@media(max-width:680px) {
+  .settings-grid { grid-template-columns: 1fr !important; }
+}

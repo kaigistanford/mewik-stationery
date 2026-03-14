@@ -60,10 +60,10 @@
       <div class="hero-eyebrow">
         <span>✦</span> Tanzania's Academic Services Platform
       </div>
-      <h1 class="hero-title">
+      <h1 class="hero-title" id="hero-title-dynamic">
         Your <em>Academic Success</em>,<br>Professionally Delivered
       </h1>
-      <p class="hero-subtitle">
+      <p class="hero-subtitle" id="hero-sub-dynamic">
         Mewik Stationery provides expert academic assistance and secretarial services for university and college students across Tanzania — from assignments to full research reports.
       </p>
       <div class="hero-cta">
@@ -161,7 +161,7 @@
   </div>
 </section>
 
-<!-- ── Testimonials ───────────────────────────────────────── -->
+<!-- ── Testimonials (dynamic from DB) ───────────────────────── -->
 <section class="testimonials-section" id="testimonials">
   <div class="container">
     <div class="text-center">
@@ -169,41 +169,8 @@
       <h2 class="section-title">What Students Say</h2>
       <p class="section-subtitle">Honest feedback from students we have helped across Tanzania.</p>
     </div>
-
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"My field attachment report was done professionally and on time. The writing followed the IRDP format perfectly. I will definitely use Mewik again."</p>
-        <div class="testimonial-author">
-          <div class="author-avatar">F</div>
-          <div>
-            <div class="author-name">Fatuma M.</div>
-            <div class="author-meta">IRDP Dodoma, Year 3</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <p class="testimonial-text">"I was struggling with my research proposal. The team helped me from the title page to the reference list. My supervisor was very impressed."</p>
-        <div class="testimonial-author">
-          <div class="author-avatar">J</div>
-          <div>
-            <div class="author-name">Joseph K.</div>
-            <div class="author-meta">UDSM, Bachelor of Arts</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★☆</div>
-        <p class="testimonial-text">"Fast service and good communication. The assignment was submitted two days before my deadline. WhatsApp updates made everything smooth."</p>
-        <div class="testimonial-author">
-          <div class="author-avatar">A</div>
-          <div>
-            <div class="author-name">Amina S.</div>
-            <div class="author-meta">Mzumbe University, Diploma</div>
-          </div>
-        </div>
-      </div>
+    <div id="dynamic-ratings-grid" class="testimonials-grid">
+      <div class="spinner"></div>
     </div>
   </div>
 </section>
@@ -218,22 +185,22 @@
 
         <div class="contact-item">
           <span>📍</span>
-          <span>Dar es Salaam, Tanzania</span>
+          <span>St. Gemma Road, Miyuji Proper Street, Miyuji — Dodoma City</span>
         </div>
         <div class="contact-item">
           <span>📱</span>
-          <span>+255 744 000 000</span>
+          <span>+255 616 832 924</span>
         </div>
         <div class="contact-item">
           <span>✉️</span>
-          <span>info@mewikstationery.co.tz</span>
+          <span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="442d2a222b042921332d2f373025302d2b2a21363d6a272b6a303e">[email&#160;protected]</a></span>
         </div>
         <div class="contact-item">
           <span>⏰</span>
           <span>Mon – Sat: 8:00 AM – 8:00 PM</span>
         </div>
 
-        <a href="https://wa.me/255744000000?text=Hello%20Mewik%20Stationery,%20I%20need%20academic%20assistance" 
+        <a href="https://wa.me/255621501329?text=Hello%20Mewik%20Stationery,%20I%20need%20academic%20assistance" 
            target="_blank" class="whatsapp-btn">
           <span>💬</span> Chat on WhatsApp
         </a>
@@ -275,7 +242,7 @@
   </div>
 </div>
 
-<script src="js/app.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="js/app.js"></script>
 <script>
   // ── Hamburger ──────────────────────────────────────────────
   document.getElementById('landing-hamburger').addEventListener('click', () => {
@@ -303,6 +270,8 @@
   // ── Services Grid ──────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     initSampleData();
+    loadDynamicRatings();
+    loadContactInfo();
     const services = DB.getServices();
     const pricing  = DB.getPricing();
     const grid = document.getElementById('services-grid');
@@ -332,6 +301,52 @@
       </div>`).join('');
   });
 
+  // ── Load Dynamic Ratings ──────────────────────────────────────
+  function loadDynamicRatings() {
+    const grid = document.getElementById('dynamic-ratings-grid');
+    if (!grid) return;
+    const ratings = DB.getPublicRatings().slice().reverse().slice(0, 6);
+    if (!ratings.length) {
+      grid.innerHTML = '<p style="text-align:center;color:var(--gray-mid);padding:40px 0">No reviews yet. Be the first to rate our services!</p>';
+      return;
+    }
+    grid.innerHTML = ratings.map(function(r) {
+      const stars = renderStars(r.stars, '1rem');
+      return '<div class="testimonial-card">'
+        + '<div class="testimonial-stars" style="margin-bottom:12px">' + stars + '</div>'
+        + '<p class="testimonial-text">"' + esc(r.comment || 'Great service!') + '"</p>'
+        + '<div class="testimonial-author">'
+        + '<div class="author-avatar">' + (r.userName ? r.userName.charAt(0).toUpperCase() : '?') + '</div>'
+        + '<div><div class="author-name">' + esc(r.userName) + '</div>'
+        + '<div class="author-meta">' + esc(r.userUniversity || '') + '</div></div>'
+        + '</div></div>';
+    }).join('');
+  }
+
+  // ── Load Dynamic Contact Info ──────────────────────────────────
+  function loadContactInfo() {
+    const s = DB.getSettings();
+    const setTxt = function(id, val) { const el=document.getElementById(id); if(el&&val) el.textContent=val; };
+    setTxt('contact-address', s.address);
+    setTxt('contact-phone',   s.phone);
+    setTxt('contact-email',   s.email);
+    setTxt('contact-hours',   s.hours);
+    // WhatsApp buttons
+    const waBtns = document.getElementById('whatsapp-btns');
+    if (waBtns) {
+      const nums = [s.whatsapp, s.whatsapp2].filter(Boolean);
+      waBtns.innerHTML = nums.map(function(n) {
+        const display = n.startsWith('255') ? '+' + n : n;
+        return '<a href="https://wa.me/' + n + '?text=Hello%20Mewik%20Stationery,%20I%20need%20academic%20assistance" target="_blank" class="whatsapp-btn"><span>💬</span> WhatsApp: ' + display + '</a>';
+      }).join('');
+    }
+    // Hero update
+    const heroTitle = document.getElementById('hero-title-dynamic');
+    const heroSub   = document.getElementById('hero-sub-dynamic');
+    if (heroTitle && s.heroTitle) heroTitle.innerHTML = s.heroTitle;
+    if (heroSub   && s.heroSubtitle) heroSub.textContent = s.heroSubtitle;
+  }
+
   // ── PWA Install ────────────────────────────────────────────
   let deferredPrompt = null;
   window.addEventListener('beforeinstallprompt', e => {
@@ -356,9 +371,4 @@
   }
   function dismissInstall() {
     document.getElementById('install-banner').classList.add('hidden');
-    sessionStorage.setItem('install_dismissed', '1');
-  }
-</script>
-<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
-</body>
-</html>
+    sessionSto

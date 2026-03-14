@@ -201,18 +201,24 @@ function renderHistory() {
     <div class="table-wrapper">
       <table>
         <thead><tr>
-          <th>Request ID</th><th>Service</th><th>Submitted</th><th>Completed</th><th>Price (TZS)</th><th>Status</th><th>Download</th>
+          <th>Request ID</th><th>Service</th><th>Submitted</th><th>Completed</th><th>Price (TZS)</th><th>Download</th><th>Rating</th>
         </tr></thead>
         <tbody>
-          ${reqs.map(r => `<tr>
-            <td><span style="font-family:var(--font-mono);font-size:0.78rem">${esc(r.id)}</span></td>
-            <td>${esc(r.serviceType)}</td>
-            <td>${formatDate(r.createdAt)}</td>
-            <td>${formatDate(r.completedAt)}</td>
-            <td>${r.price ? Number(r.price).toLocaleString() : '—'}</td>
-            <td>${statusBadge(r.status)}</td>
-            <td>${r.deliveryFile ? `<a href="${r.deliveryFile}" target="_blank" class="btn btn-primary btn-sm">⬇ PDF</a>` : '—'}</td>
-          </tr>`).join('')}
+          ${reqs.map(r => {
+            const alreadyRated = DB.getRatingByRequestId(r.id);
+            return `<tr>
+              <td><span style="font-family:var(--font-mono);font-size:0.78rem">${esc(r.id)}</span></td>
+              <td>${esc(r.serviceType)}</td>
+              <td>${formatDate(r.createdAt)}</td>
+              <td>${formatDate(r.completedAt)}</td>
+              <td>${r.price ? Number(r.price).toLocaleString() : '—'}</td>
+              <td>${r.deliveryFile ? `<a href="${r.deliveryFile}" target="_blank" class="btn btn-primary btn-sm">⬇ PDF</a>` : '—'}</td>
+              <td>${alreadyRated
+                ? `<span style="color:var(--gold)">${renderStars(alreadyRated.stars,'0.9rem')}</span>`
+                : `<button class="btn btn-outline btn-sm" onclick="openRatingModal('${r.id}')">⭐ Rate</button>`
+              }</td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>`;

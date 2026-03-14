@@ -8,6 +8,18 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
+    <style>
+    .filter-tab{padding:8px 16px;border-radius:100px;font-size:0.82rem;font-weight:600;background:var(--cream);color:var(--gray-mid);border:none;cursor:pointer;transition:var(--transition);}
+    .filter-tab.active{background:var(--green-rich);color:var(--white);}
+    .req-info{flex:1;} .req-id{font-family:var(--font-mono);font-size:0.72rem;color:var(--gray-mid);}
+    .req-service{font-weight:600;font-size:0.95rem;color:var(--green-deep);margin:2px 0;}
+    .req-date{font-size:0.78rem;color:var(--gray-mid);}
+    .req-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+    .request-row{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(15,43,34,0.06);cursor:pointer;transition:var(--transition);flex-wrap:wrap;gap:12px;}
+    .request-row:hover{background:var(--cream);} .request-row:last-child{border-bottom:none;}
+    .star-btn{font-size:2rem;cursor:pointer;color:#d4d4d4;transition:color 0.15s;background:none;border:none;padding:0 4px;}
+    .star-btn:hover,.star-btn.selected{color:#c9a84c;}
+  </style>
   <style>
     .filter-tab { padding:8px 16px;border-radius:100px;font-size:0.82rem;font-weight:600;background:var(--cream);color:var(--gray-mid);border:none;cursor:pointer;transition:var(--transition); }
     .filter-tab.active { background:var(--green-rich);color:var(--white); }
@@ -349,5 +361,121 @@
   });
 </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").then(()=>console.log("[SW] Registered")).catch(console.warn);}</script>
+
+<!-- ── Rating Modal ─────────────────────────────────────────── -->
+<div class="modal-backdrop" id="rating-modal-backdrop" onclick="closeRatingModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">⭐ Rate Our Service</div>
+      <button class="modal-close" onclick="closeRatingModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--gray-mid);font-size:0.9rem;margin-bottom:20px">Your feedback helps other students. This is completely optional — thank you!</p>
+      <div style="font-weight:600;color:var(--green-deep);margin-bottom:8px">Service: <span id="rating-service-name"></span></div>
+      <div style="margin-bottom:20px;text-align:center">
+        <button class="star-btn" data-star="1" onclick="selectStar(1)">★</button>
+        <button class="star-btn" data-star="2" onclick="selectStar(2)">★</button>
+        <button class="star-btn" data-star="3" onclick="selectStar(3)">★</button>
+        <button class="star-btn" data-star="4" onclick="selectStar(4)">★</button>
+        <button class="star-btn" data-star="5" onclick="selectStar(5)">★</button>
+        <div style="font-size:0.82rem;color:var(--gray-mid);margin-top:6px" id="star-label">Tap a star to rate</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Comment (optional)</label>
+        <textarea id="rating-comment" class="form-control" rows="3" placeholder="Share your experience with other students..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="btn btn-secondary btn-full" onclick="submitRating()">Submit Rating</button>
+        <button class="btn btn-full" style="background:var(--cream);color:var(--gray-mid)" onclick="closeRatingModal()">Skip</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Rating System ──────────────────────────────────────────────
+let currentRatingReqId = null;
+let currentStars = 0;
+const starLabels = ['','Poor','Fair','Good','Very Good','Excellent'];
+
+function selectStar(n) {
+  currentStars = n;
+  document.querySelectorAll('.star-btn').forEach(function(btn) {
+    btn.classList.toggle('selected', Number(btn.dataset.star) <= n);
+  });
+  var lbl = document.getElementById('star-label');
+  if (lbl) lbl.textContent = starLabels[n] || '';
+}
+
+function openRatingModal(reqId) {
+  var req = DB.getRequestById(reqId);
+  if (!req) return;
+  // Don't show if already rated
+  if (DB.getRatingByRequestId(reqId)) {
+    showToast('Already Rated', 'You have already rated this service.', 'info');
+    return;
+  }
+  currentRatingReqId = reqId;
+  currentStars = 0;
+  document.querySelectorAll('.star-btn').forEach(function(b){ b.classList.remove('selected'); });
+  var lbl = document.getElementById('star-label');
+  if (lbl) lbl.textContent = 'Tap a star to rate';
+  var svcName = document.getElementById('rating-service-name');
+  if (svcName) svcName.textContent = req.serviceType;
+  var cmt = document.getElementById('rating-comment');
+  if (cmt) cmt.value = '';
+  var backdrop = document.getElementById('rating-modal-backdrop');
+  if (backdrop) backdrop.classList.add('open');
+}
+
+function closeRatingModal() {
+  var backdrop = document.getElementById('rating-modal-backdrop');
+  if (backdrop) backdrop.classList.remove('open');
+  currentRatingReqId = null;
+}
+
+function submitRating() {
+  if (!currentStars) { showToast('Select Stars', 'Please tap a star to give a rating.', 'warning'); return; }
+  var req = DB.getRequestById(currentRatingReqId);
+  if (!req) return;
+  var user = Session.currentUser();
+  var comment = document.getElementById('rating-comment').value.trim();
+  DB.addRating({
+    id:             generateId('RTG'),
+    userId:         user.id,
+    userName:       user.fullName,
+    userUniversity: user.university + (user.level ? ', ' + user.level : ''),
+    requestId:      currentRatingReqId,
+    serviceType:    req.serviceType,
+    stars:          currentStars,
+    comment:        comment,
+    createdAt:      new Date().toISOString(),
+    approved:       true,
+    visible:        true,
+  });
+  closeRatingModal();
+  showToast('Thank You! ⭐', 'Your rating has been submitted.', 'success');
+}
+
+// Check on load if any completed requests need rating prompt
+document.addEventListener('DOMContentLoaded', function() {
+  var user = Session.currentUser();
+  if (!user) return;
+  setTimeout(function() {
+    var completed = DB.getRequestsByUser(user.id).filter(function(r) {
+      return r.status === 'Completed' && !r.hiddenFromUser && !DB.getRatingByRequestId(r.id);
+    });
+    if (completed.length > 0) {
+      var latest = completed[completed.length - 1];
+      // Show prompt only once per session
+      if (!sessionStorage.getItem('rating_prompted_' + latest.id)) {
+        sessionStorage.setItem('rating_prompted_' + latest.id, '1');
+        setTimeout(function() { openRatingModal(latest.id); }, 2000);
+      }
+    }
+  }, 1500);
+});
+</script>
+
 </body>
 </html>
